@@ -1,0 +1,14 @@
+name: musiclearn
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - scipy
+  - numpy==1.19.5
+  - tensorflow-gpu
+  - matplotlib
+  - scikit-learn
+  - black
+  - pylint
+  - jupyter
