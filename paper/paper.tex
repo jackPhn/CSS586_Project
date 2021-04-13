@@ -1,11 +1,15 @@
 %% The first command in your LaTeX source must be the \documentclass command.
-\documentclass[sigconf]{acmart}
+\documentclass[sigconf,authorversion]{acmart}
 %% NOTE that a single column version may be required for
 %% submission and peer review. This can be done by changing
 %% the \doucmentclass[...]{acmart} in this template to
 %% \documentclass[manuscript,screen,review]{acmart}
 
 \begin{document}
+\settopmatter{printacmref=false}
+\setcopyright{none}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\pagestyle{plain}
 \title{Musical Deep Learning}
 
 %%
@@ -42,7 +46,7 @@
 
 \section{Introduction}
 
-\cite{huang_music_2018}
+Example citation \cite{huang_music_2018}.
 
 \section{Methods}
 
