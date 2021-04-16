@@ -46,7 +46,8 @@ class WavDataGenerator(keras.utils.Sequence):
             padding="pre",
             truncating="pre",
             maxlen=self.max_len,
-            value=0,
+            value=0.0,
+            dtype="float32",
         )
 
     def on_epoch_end(self):
