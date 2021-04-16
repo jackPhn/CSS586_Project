@@ -3,10 +3,9 @@ Preprocessing audio data (.wav files) for analysis.
 """
 import os
 from pathlib import Path
-import itertools
 import dotenv
-import random
 from tensorflow import keras
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 from scipy.io import wavfile
 import numpy as np
 
@@ -19,7 +18,7 @@ class WavDataGenerator(keras.utils.Sequence):
         directory: os.PathLike,
         batch_size: int = 32,
         shuffle: bool = True,
-        max_len: int = 0,
+        max_len: int = None,
     ):
         """Post-initialization"""
         self.directory = Path(directory)
@@ -42,11 +41,13 @@ class WavDataGenerator(keras.utils.Sequence):
     def __getitem__(self, index):
         """Get one batch of data as a numpy array, padded to length of the longest sequence."""
         fnames = self._get_batch_filenames(index)
-        if self.max_len > 0:
-            wavs = [wavfile.read(f)[1][: self.max_len] for f in fnames]
-        else:
-            wavs = [wavfile.read(f)[1] for f in fnames]
-        return np.column_stack(list(itertools.zip_longest(*wavs, fillvalue=0)))
+        return pad_sequences(
+            [wavfile.read(f)[1] for f in fnames],
+            padding="pre",
+            truncating="pre",
+            maxlen=self.max_len,
+            value=0,
+        )
 
     def on_epoch_end(self):
         "Reshuffle indices after each epoch"
