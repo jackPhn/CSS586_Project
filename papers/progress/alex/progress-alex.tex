@@ -64,7 +64,7 @@ for music deep learning research and development of software tools to expose
 these models for use by creative artists and students.
 
 MusicVAE is a variational LSTM autoencoder for MIDI that incorporates a
-novel hierarchical structure using a "composer" recurrent layer in its encoder
+novel hierarchical structure using a ``composer'' recurrent layer in its encoder
 model to better capture structure at multiple
 levels \cite{roberts_hierarchical_2018}.
 
@@ -73,17 +73,35 @@ Natural Language Processing (NLP) domain, using an attention network to model
 MIDI music as a sequence of discrete tokens with relative positional dependencies
 \cite{huang_music_2018}.
 
+The major advantage of working with the symbolic representation of music is that
+it is of far lower dimensionality than the raw audio waveforms of a recorded
+performance,
+
 Other research has focused on modeling raw audio waveforms directly. WaveNet is
 a causal convolutional neural network for generating raw audio waveforms,
 developed by Google DeepMind, which achieves state of the art performance in
 generating natural sounding speech from text, but is also capable of generating
-short, realistic snippets of audio music \cite{oord_wavenet_2016}. Another model
-named SampleRNN generates raw audio waveforms using a three-tier hierarchy of
-gated recurrent units (GRU) to model recurrent structure at multiple temporal
-resolutions \cite{mehri_samplernn_2017}.
+short, realistic snippets of audio music \cite{oord_wavenet_2016}.
+
+Another model named SampleRNN generates raw audio waveforms using a three-tier
+hierarchy of gated recurrent units (GRU) to model recurrent structure at
+multiple temporal resolutions \cite{mehri_samplernn_2017}.
+
+Jukebox by OpenAI utilizes a vector-quantized variational autoencoder (VQ-VAE)
+to compress raw audio into a sequence of discrete codes and models these
+sequences using autoregressive transformers to generate music
+\cite{dhariwal2020jukebox}.
+
+Audio data can also be modeled in the frequency domain through the use of
+Fourier analysis. The recent MelNet model is trained on spectrograms and can
+learn musical structures such as melody and harmony and variations in volume,
+timbre and rhythm \cite{vasquez2019melnet}.
 
 A paper from Boston University describes an effort to combine the symbolic and
-waveform approaches to music modeling \cite{manzelli_conditioning_2018}.
+waveform approaches to music modeling, by training an LSTM to learn melodic
+structure of different styles of music, then providing generations from this
+model as conditioning inputs to a WaveNet-based raw audio generator
+\cite{manzelli_conditioning_2018}.
 
 \section{Planned Methods}
 
