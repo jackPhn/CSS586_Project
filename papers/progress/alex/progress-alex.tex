@@ -73,9 +73,12 @@ Natural Language Processing (NLP) domain, using an attention network to model
 MIDI music as a sequence of discrete tokens with relative positional dependencies
 \cite{huang_music_2018}.
 
-The major advantage of working with the symbolic representation of music is that
+A major advantage of working with the symbolic representation of music is that
 it is of far lower dimensionality than the raw audio waveforms of a recorded
-performance,
+performance, which makes it less computationally expensive. However, there are
+many aspects of musical performance that are not captured by a symbolic
+representation, so the expressiveness of symbolic generative models is
+constrained \cite{manzelli_conditioning_2018}.
 
 Other research has focused on modeling raw audio waveforms directly. WaveNet is
 a causal convolutional neural network for generating raw audio waveforms,
