@@ -44,7 +44,7 @@ music on the MusicNet dataset.
 Machine learning models of music have interesting applications in music
 information retrieval and creative tools for musical artists and educators.
 Music is complex and challenging to model because it exhibits a hierarchy of
-recurring patterns. 
+recurring patterns.
 
 Depending on the task, machine learning models of music may be trained on the
 audio signal itself, either in a time domain or a frequency domain
@@ -53,9 +53,9 @@ music, the most common of which is MIDI (Musical Instrument Digital Interface)
 notation. MIDI is an encoding of music as streams of bytes in one or more tracks
 or channels, each representing a sequence of 128 possible pitch values, along
 with timing, pressure and instrument values. A music transcription model may
-convert an audio signal into MIDI (which can then be transcribed into sheet
-music), while a synthesizer model can convert MIDI representations into audio
-signals.
+convert an audio signal into MIDI, which can easily be converted into other
+symbolic representations such as sheet music, while a synthesizer model can
+convert MIDI representations into audio signals.
 
 \section{Related Work}
 
@@ -72,6 +72,18 @@ Music Transformer is a generative model that borrows its approach from the
 Natural Language Processing (NLP) domain, using an attention network to model
 MIDI music as a sequence of discrete tokens with relative positional dependencies
 \cite{huang_music_2018}.
+
+Other research has focused on modeling raw audio waveforms directly. WaveNet is
+a causal convolutional neural network for generating raw audio waveforms,
+developed by Google DeepMind, which achieves state of the art performance in
+generating natural sounding speech from text, but is also capable of generating
+short, realistic snippets of audio music \cite{oord_wavenet_2016}. Another model
+named SampleRNN generates raw audio waveforms using a three-tier hierarchy of
+gated recurrent units (GRU) to model recurrent structure at multiple temporal
+resolutions \cite{mehri_samplernn_2017}.
+
+A paper from Boston University describes an effort to combine the symbolic and
+waveform approaches to music modeling \cite{manzelli_conditioning_2018}.
 
 \section{Planned Methods}
 

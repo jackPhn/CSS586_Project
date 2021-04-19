@@ -3,10 +3,7 @@
 default: progress-alex.pdf
 
 progress-alex.pdf: progress-alex.tex progress-alex.bib
-	pdflatex progress-alex
-	bibtex progress-alex
-	pdflatex progress-alex
-	pdflatex progress-alex
+	latexmk -bibtex -pdf progress-alex
 
 watch:
-	ladtexmk -pdf -pvc paper.tex
+	latexmk -bibtex -pdf -pvc progress-alex
