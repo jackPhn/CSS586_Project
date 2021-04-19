@@ -441,3 +441,4 @@ cython_debug/
 
 # Pipenv lock file
 Pipfile.lock
+.vscode/
