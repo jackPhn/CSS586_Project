@@ -10,6 +10,7 @@ from scipy.io import wavfile
 import numpy as np
 
 
+
 class WavDataGenerator(keras.utils.Sequence):
     """A Keras Sequence for providing audio (.wav) file data in batches."""
 
@@ -83,3 +84,7 @@ def test_batch_maxlen():
     wdg = WavDataGenerator(dir, batch_size=batch_size, max_len=sample_rate)
     batch = wdg[0]
     assert batch.shape == (batch_size, sample_rate)
+
+
+class MIDIDataGenerator(keras.utils.Sequence):
+    """Generates note sequence tensors from MIDI files"""

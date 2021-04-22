@@ -12,3 +12,6 @@ dependencies:
   - black
   - pylint
   - jupyter
+  - pip
+  - pip:
+      - note-seq
