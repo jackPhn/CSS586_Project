@@ -10,7 +10,6 @@ from scipy.io import wavfile
 import numpy as np
 
 
-
 class WavDataGenerator(keras.utils.Sequence):
     """A Keras Sequence for providing audio (.wav) file data in batches."""
 
@@ -61,7 +60,7 @@ class WavDataGenerator(keras.utils.Sequence):
 def test_batch_filenames():
     """Test that it can create shuffled batches of filenames"""
     dotenv.load_dotenv()
-    dir = Path(os.getenv("MUSIC_DATA_DIR")) / "train_data"
+    dir = Path(os.getenv("MUSICNET_DIR")) / "train_data"
     wdg = WavDataGenerator(dir, batch_size=2)
     batch = wdg._get_batch_filenames(0)
     assert Path(batch[0]).is_file
@@ -77,9 +76,9 @@ def test_batch_filenames():
 def test_batch_maxlen():
     """Test that it retrieves data up to a max length"""
     dotenv.load_dotenv()
-    dir = Path(os.getenv("MUSIC_DATA_DIR")) / "train_data"
+    dir = Path(os.getenv("MUSICNET_DIR")) / "train_data"
     # get 1 second of data per file
-    sample_rate = int(os.getenv("SAMPLE_RATE"))
+    sample_rate = int(os.getenv("MUSICNET_SAMPLE_RATE"))
     batch_size = 2
     wdg = WavDataGenerator(dir, batch_size=batch_size, max_len=sample_rate)
     batch = wdg[0]
