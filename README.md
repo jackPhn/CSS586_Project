@@ -40,3 +40,5 @@ MUSICNET_DIR=/media/hdd1/data/school/css586/musicnet
 MUSICNET_MIDI_DIR=/media/hdd1/data/school/css586/musicnet_midis
 MUSICNET_SAMPLE_RATE=44100
 ```
+
+For a current list of configuration constants, see [musiclearn/config.py](./musiclearn/config.py)
