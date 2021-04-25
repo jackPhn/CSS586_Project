@@ -6,6 +6,9 @@ Generative music modeling on symbolic (MIDI) and audio music data.
 
 This is a Python 3 project using TensorFlow 2.
 
+[Miniconda](https://docs.conda.io/en/latest/miniconda.html) 3.9 or 3.8 is
+recommended.
+
 Dependencies are specified in the conda environment file
 [environment.yml](./environment.yml).
 
