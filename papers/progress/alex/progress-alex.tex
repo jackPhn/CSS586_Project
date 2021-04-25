@@ -10,7 +10,7 @@
 \setcopyright{none}
 \renewcommand\footnotetextcopyrightpermission[1]{}
 \pagestyle{plain}
-\title{Progress Report for CSS 586: \\
+\title{Progress Report for CSS 586 Course Project: \\
 Modeling Latent Patterns in Music}
 
 %%
@@ -32,10 +32,10 @@ Modeling Latent Patterns in Music}
 \begin{abstract}
 This report explores recent research in modeling music with deep learning and
 provides a progress report on a course project to train a generative model of
-classical music on the MusicNet dataset.
+classical and popular music on the MusicNet and Lakh MIDI datasets.
 \end{abstract}
 
-\keywords{deep learning, neural networks, music}
+\keywords{deep learning, sequence learning, generative modeling, recurrent neural networks, music, MIDI}
 
 \maketitle
 
@@ -67,6 +67,8 @@ MusicVAE is a variational LSTM autoencoder for MIDI that incorporates a
 novel hierarchical structure using a ``composer'' recurrent layer in its encoder
 model to better capture structure at multiple
 levels \cite{roberts_hierarchical_2018}.
+
+MuseGAN  \cite{dong2017musegan}.
 
 Music Transformer is a generative model that borrows its approach from the
 Natural Language Processing (NLP) domain, using an attention network to model
@@ -110,6 +112,8 @@ generations from this model as conditioning inputs to a WaveNet-based raw audio
 generator \cite{manzelli_conditioning_2018}.
 
 \section{Planned Methods and Progress}
+
+\subsection{Datasets}
 
 \subsection{Data Preprocessing}
 
