@@ -1,16 +1,10 @@
 # CSS586_Project
 
-Music related machine learning project
-
-Potential Tasks:
-
-- Music transcription
-- Music representation learning and clustering
-- Music generation
+Generative music modeling on symbolic (MIDI) and audio music data.
 
 ## Setup
 
-This is a Python 3 project.
+This is a Python 3 project using TensorFlow 2.
 
 Dependencies are specified in the conda environment file
 [environment.yml](./environment.yml).
