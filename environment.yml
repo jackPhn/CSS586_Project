@@ -12,6 +12,9 @@ dependencies:
   - black
   - pylint
   - jupyter
+  - music21
   - pip
   - pip:
       - note-seq
+      - pypianoroll
+      - pretty-midi

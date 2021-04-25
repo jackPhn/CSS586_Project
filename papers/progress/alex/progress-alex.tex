@@ -31,8 +31,8 @@ Modeling Latent Patterns in Music}
 
 \begin{abstract}
 This report explores recent research in modeling music with deep learning and
-provides a progress report on a project to train a generative model of classical
-music on the MusicNet dataset.
+provides a progress report on a course project to train a generative model of
+classical music on the MusicNet dataset.
 \end{abstract}
 
 \keywords{deep learning, neural networks, music}
@@ -54,8 +54,8 @@ notation. MIDI is an encoding of music as streams of bytes in one or more tracks
 or channels, each representing a sequence of 128 possible pitch values, along
 with timing, pressure and instrument values. A music transcription model may
 convert an audio signal into MIDI, which can easily be converted into other
-symbolic representations such as sheet music, while a synthesizer model can
-convert MIDI representations into audio signals.
+symbolic representations such as sheet music for human performers to read from,
+while a synthesizer model can convert MIDI representations into audio signals.
 
 \section{Related Work}
 
@@ -100,17 +100,52 @@ Fourier analysis. The recent MelNet model is trained on spectrograms and can
 learn musical structures such as melody and harmony and variations in volume,
 timbre and rhythm \cite{vasquez2019melnet}.
 
-A paper from Boston University describes an effort to combine the symbolic and
-waveform approaches to music modeling, by training an LSTM to learn melodic
-structure of different styles of music, then providing generations from this
-model as conditioning inputs to a WaveNet-based raw audio generator
-\cite{manzelli_conditioning_2018}.
+Prior work points out that the division between symbolic music notes and the
+sounds of music is analogous to the division between symbolic language and
+utterances in speech, which may inspire ideas for combining the two approaches
+\cite{hawthorne2019enabling}. A paper from Boston University describes an effort
+to combine the symbolic and waveform approaches to music modeling, by training
+an LSTM to learn melodic structure of different styles of music, then providing
+generations from this model as conditioning inputs to a WaveNet-based raw audio
+generator \cite{manzelli_conditioning_2018}.
 
-Prior work points out that the division between symbolic music notes and the sounds of music is analogous to the division between symbolic language and utterances in speech \cite{hawthorne2019enabling}.
+\section{Planned Methods and Progress}
 
-\section{Planned Methods}
+\subsection{Data Preprocessing}
 
-\section{Progress}
+This project will focus on the generative modeling of symbolic music using MIDI
+data, because of the advantages of symbolic music models in representing
+long-term structure in musical compositions to produce generations with coherent
+use of repetition over long time scales.
+
+\subsection{Model Fitting}
+
+We will explore several modeling approaches to generating symbolic music:
+
+\begin{itemize}
+  \item{Sliding window sequence prediction with RNNs (LSTM/GRU)}
+  \item{Sliding window sequence prediction with Transformers}
+  \item{Latent space interpolation with Sequential VAEs}
+  \item{Latent space interpolation with Sequential GANs}
+\end{itemize}
+
+\subsection{Model Evaluation}
+
+Evaluation of generative models is challenging because there is no equivalent of
+an accuracy metric like what is used in supervised learning. Generative models
+are typically evaluated using a combination of qualitative metrics whereby human
+judges rate the quality of the generated examples (essentially a Turing test),
+and quantitative metrics that assess the differences in the parametric
+distributions of generated and real examples. Yang and Lerch (2020) proposes a
+set of metrics informed by music theory, for probabilistically evaluating how
+similar the generations are to known sample distributions of real music
+\cite{yang_evaluation_2020}. These metrics include counts, ranges, histograms
+and transition matrices of pitches and note lengths, then the Kullback-Leibler
+divergence and overlapping area of the probability density functions are use to
+compare against known reference distributions per musical genre
+\cite{yang_evaluation_2020}. Due to the cost and time requirements associated
+with designing a human subjects experiment, we plan to utilize this quantitative
+approach to generation quality assessment.
 
 \section{Future Work}
 
