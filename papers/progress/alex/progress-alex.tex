@@ -111,7 +111,7 @@ an LSTM to learn melodic structure of different styles of music, then providing
 generations from this model as conditioning inputs to a WaveNet-based raw audio
 generator \cite{manzelli_conditioning_2018}.
 
-\section{Planned Methods and Progress}
+\section{Planned Methods}
 
 \subsection{Datasets}
 
@@ -121,6 +121,16 @@ This project will focus on the generative modeling of symbolic music using MIDI
 data, because of the advantages of symbolic music models in representing
 long-term structure in musical compositions to produce generations with coherent
 use of repetition over long time scales.
+
+Several choices must be made in how to preprocess MIDI files into training
+examples for a neural network. In order to accommodate polyphonic music, we will
+convert each MIDI file into a piano roll representation, wherein each instrument
+track is a sparse matrix of the velocity values for each of 128 possible pitch
+levels at each timestep. Because songs are typically at least a few minutes long
+and of widely varying length, we will crop songs into equal-length phrases.
+
+The result of this preprocessing is that each training example will be a 3D
+tensor of shape (tracks x notes x ticks).
 
 \subsection{Model Fitting}
 
@@ -151,7 +161,7 @@ compare against known reference distributions per musical genre
 with designing a human subjects experiment, we plan to utilize this quantitative
 approach to generation quality assessment.
 
-\section{Future Work}
+\section{Progress and Remaining Work}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{progress-alex}

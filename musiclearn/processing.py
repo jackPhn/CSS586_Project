@@ -3,11 +3,12 @@ Preprocessing audio data (.wav files) for analysis.
 """
 import os
 from pathlib import Path
-import dotenv
 from tensorflow import keras
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from scipy.io import wavfile
 import numpy as np
+import pypianoroll
+from musiclearn import config
 
 
 class WavDataGenerator(keras.utils.Sequence):
@@ -59,8 +60,7 @@ class WavDataGenerator(keras.utils.Sequence):
 
 def test_batch_filenames():
     """Test that it can create shuffled batches of filenames"""
-    dotenv.load_dotenv()
-    dir = Path(os.getenv("MUSICNET_DIR")) / "train_data"
+    dir = Path(config.MUSICNET_DIR) / "train_data"
     wdg = WavDataGenerator(dir, batch_size=2)
     batch = wdg._get_batch_filenames(0)
     assert Path(batch[0]).is_file
@@ -75,8 +75,7 @@ def test_batch_filenames():
 
 def test_batch_maxlen():
     """Test that it retrieves data up to a max length"""
-    dotenv.load_dotenv()
-    dir = Path(os.getenv("MUSICNET_DIR")) / "train_data"
+    dir = Path(config.MUSICNET_DIR) / "train_data"
     # get 1 second of data per file
     sample_rate = int(os.getenv("MUSICNET_SAMPLE_RATE"))
     batch_size = 2
@@ -86,4 +85,33 @@ def test_batch_maxlen():
 
 
 class MIDIDataGenerator(keras.utils.Sequence):
-    """Generates note sequence tensors from MIDI files"""
+    """Generates multitrack piano roll tensors from MIDI files"""
+
+    def __init__(self, directory: os.PathLike):
+        """constructor"""
+
+
+def midi_to_multitrack(path: os.PathLike):
+    """"""
+    assert os.path.isfile(path)
+    mt = pypianoroll.Multitrack(str(path))
+    return mt
+
+
+def num_bars(mt: pypianoroll.Multitrack, resolution: int = 12) -> int:
+    """Get the integer number of bars in a Multitrack piano roll"""
+    return len(mt.downbeat) // resolution
+
+
+def phrase(
+    mt: pypianoroll.Multitrack,
+    idx: int,
+    resolution: int = 12,
+    bars_per_phrase: int = 4,
+):
+    """Get the phrase starting at the given index, where 0 is the first
+    phrase."""
+    start = idx * resolution
+    end = bars_per_phrase * resolution + start
+    tracks = [track[start:end] for track in mt.tracks]
+    return pypianoroll.Multitrack(tracks=tracks, beat_resolution=12)

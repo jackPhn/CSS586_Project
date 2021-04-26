@@ -6,7 +6,7 @@ import music21
 import pretty_midi
 import pandas as pd
 import pypianoroll
-from miditoolkit import midi
+from miditoolkit import midi, pianoroll
 
 sys.path.append("..")
 from musiclearn import config
@@ -34,11 +34,11 @@ print(pretty_2494.instruments[0].notes[0:50])
 #
 # One representation is a piano roll, which is a numpy 2D array of notes over
 # time steps at a given frames per second rate (symbolic timing). There are 128
-# notes (0-127) and if the note is playing during that time step it will be 1,
-# else 0. This allows chords but assumes a single instrument. So it loses
-# instrument information unless you produce separate per-instrument piano rolls.
-# It produces a sparse matrix since most notes aren't being played at most time
-# steps.
+# notes (0-127) and the values are the note velocities. Or, if binarized, the
+# values are 1 for playing, else 0 for resting. This format allows chords but
+# assumes a single instrument. So it loses instrument information unless you
+# produce separate per-instrument piano rolls. It produces a sparse matrix since
+# most notes aren't being played at most time steps.
 
 # %%
 # returns a (notes, time) dimension numpy array
@@ -55,6 +55,8 @@ pd.DataFrame(piano_2494.T)
 mid_obj = midi.parser.MidiFile(mid_2494)
 notes = mid_obj.instruments[0].notes
 print(notes[0:50])
+pianoroll_2494 = pianoroll.notes2pianoroll(notes, ticks_per_beat=24)
+pd.DataFrame(pianoroll_2494)
 
 # %% [markdown]
 # ## Using pypianoroll
@@ -66,12 +68,12 @@ print(notes[0:50])
 multitrack = pypianoroll.read(mid_2494)
 print(multitrack)
 multitrack.plot(mode="separate")
-multitrack.plot(mode="blended")
+# multitrack.plot(mode="blended")
 
 # %% [markdown]
 # ## Using Magenta note_seq package
 #
-# note_seq is a very powerful but undocumented package created by the Magenta
+# note_seq is a powerful but undocumented package created by the Magenta
 # project. It includes tools for converting between MIDI and a Protocol Buffer
 # serializeable representation of symbolic music. It uses pretty_midi internally
 # but adds some bells and whistles like plotting.
@@ -93,3 +95,11 @@ parse_2494 = music21.converter.parse(mid_2494)
 parts = music21.instrument.partitionByInstrument(parse_2494)
 print(parts)
 print(list(parts.parts[0])[1:20])
+
+# %% [markdown]
+#
+# ## Training data representation
+#
+# Because an entire song is too long music is generally composed in bars or
+# multi-bar phrases, we plan to read MIDI files and segment them into phrases,
+# one training example per phrase.
