@@ -5,6 +5,8 @@ import note_seq
 import music21
 import pretty_midi
 import pandas as pd
+import pypianoroll
+from miditoolkit import midi
 
 sys.path.append("..")
 from musiclearn import config
@@ -28,19 +30,43 @@ dir(pretty_2494)
 print(pretty_2494.instruments)
 print(pretty_2494.instruments[0].notes[0:50])
 
-# %% [markdown] One representation is a piano roll, which is a numpy 2D array of
-# notes over time steps at a given frames per second rate. There are 128 notes
-# (0-127) and if the note is playing during that time step it will be 1, else 0.
-# This allows chords but assumes a single instrument. So it loses instrument
-# information unless you produce separate per-instrument piano rolls. It
-# produces a sparse matrix since most notes aren't being played at most
-# time steps.
+# %% [markdown]
+#
+# One representation is a piano roll, which is a numpy 2D array of notes over
+# time steps at a given frames per second rate (symbolic timing). There are 128
+# notes (0-127) and if the note is playing during that time step it will be 1,
+# else 0. This allows chords but assumes a single instrument. So it loses
+# instrument information unless you produce separate per-instrument piano rolls.
+# It produces a sparse matrix since most notes aren't being played at most time
+# steps.
 
 # %%
 # returns a (notes, time) dimension numpy array
 piano_2494 = pretty_2494.get_piano_roll(fs=10)
 # Show as pandas DataFrame where rows are time steps and columns are note values
 pd.DataFrame(piano_2494.T)
+
+# %% [markdown]
+# ## Using miditoolkit
+#
+# miditoolkit is similar to pretty_midi but uses symbolic (tick) timing instead
+# of absolute (wall clock) timing. It can also convert to and from pianorolls.
+# %%
+mid_obj = midi.parser.MidiFile(mid_2494)
+notes = mid_obj.instruments[0].notes
+print(notes[0:50])
+
+# %% [markdown]
+# ## Using pypianoroll
+#
+# Yet another package, `pypianoroll`, can read MIDI into multi-track pianoroll
+# sparse tensors, and also provides handy visualizations.
+
+# %%
+multitrack = pypianoroll.read(mid_2494)
+print(multitrack)
+multitrack.plot(mode="separate")
+multitrack.plot(mode="blended")
 
 # %% [markdown]
 # ## Using Magenta note_seq package
@@ -67,5 +93,3 @@ parse_2494 = music21.converter.parse(mid_2494)
 parts = music21.instrument.partitionByInstrument(parse_2494)
 print(parts)
 print(list(parts.parts[0])[1:20])
-
-# %%

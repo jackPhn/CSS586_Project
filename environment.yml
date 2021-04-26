@@ -19,3 +19,4 @@ dependencies:
       - note-seq
       - pypianoroll
       - pretty-midi
+      - miditoolkit
