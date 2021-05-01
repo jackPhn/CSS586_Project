@@ -68,7 +68,10 @@ novel hierarchical structure using a ``composer'' recurrent layer in its encoder
 model to better capture structure at multiple
 levels \cite{roberts_hierarchical_2018}.
 
-MuseGAN  \cite{dong2017musegan}.
+MuseGAN \cite{dong2017musegan} is an application of Generative Adversarial
+Networks to polyphonic MIDI music generation, trained on four-bar phrases of a
+multi-track pianoroll representation of rock songs from the Lakh Midi Dataset
+\cite{raffel_learning-based_2016}.
 
 Music Transformer is a generative model that borrows its approach from the
 Natural Language Processing (NLP) domain, using an attention network to model
@@ -124,13 +127,27 @@ use of repetition over long time scales.
 
 Several choices must be made in how to preprocess MIDI files into training
 examples for a neural network. In order to accommodate polyphonic music, we will
-convert each MIDI file into a piano roll representation, wherein each instrument
+convert each MIDI file into a pianoroll representation, wherein each instrument
 track is a sparse matrix of the velocity values for each of 128 possible pitch
 levels at each timestep. Because songs are typically at least a few minutes long
 and of widely varying length, we will crop songs into equal-length phrases.
 
 The result of this preprocessing is that each training example will be a 3D
-tensor of shape (tracks x notes x ticks).
+tensor of shape (tracks x notes x ticks) and stacking the training examples will
+produce a 4D tensor, which is also typically the dimension of image data
+tensors in machine learning.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{first_four_bars.png}
+  \caption{The first four bars of Beethoven's Serioso String Quartet}
+  \Description{A pianoroll representation of cello, viola and violin parts.}
+\end{figure}
+
+Data augmentation is also possible--the literature suggests augmentation via
+pitch shifting the entire training example up or down by up to six semitones,
+and increasing or reducing the speed by up to 10\% in order to create additional
+training examples and reduce overfitting \cite{oore_this_2018}.
 
 \subsection{Model Fitting}
 

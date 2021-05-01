@@ -6,6 +6,7 @@ import music21
 import pretty_midi
 import pandas as pd
 import pypianoroll
+import matplotlib.pyplot as plt
 from miditoolkit import midi, pianoroll
 
 sys.path.append("..")
@@ -24,7 +25,6 @@ mid_2494 = midi_dir / "Beethoven" / "2494_qt11_1.mid"
 # between representations.
 # %%
 pretty_2494 = pretty_midi.PrettyMIDI(str(mid_2494))
-dir(pretty_2494)
 
 # %%
 print(pretty_2494.instruments)
@@ -65,7 +65,7 @@ pd.DataFrame(pianoroll_2494)
 # sparse tensors, and also provides handy visualizations.
 
 # %%
-multitrack = pypianoroll.read(mid_2494)
+multitrack = pypianoroll.read(mid_2494, resolution=24)
 print(multitrack)
 multitrack.plot(mode="separate")
 # multitrack.plot(mode="blended")
@@ -103,3 +103,51 @@ print(list(parts.parts[0])[1:20])
 # Because an entire song is too long music is generally composed in bars or
 # multi-bar phrases, we plan to read MIDI files and segment them into phrases,
 # one training example per phrase.
+
+# %%
+def get_num_beats(multitrack, resolution):
+    return len(multitrack.downbeat) // resolution
+
+
+def get_bar_bounds(bar_index, num_bars, beats_per_bar, resolution):
+    start = bar_index * resolution
+    end = start + (num_bars * beats_per_bar) * resolution
+    return (start, end)
+
+
+# %%
+def bars(multitrack, start_index, num_bars, beats_per_bar, resolution):
+    start, end = get_bar_bounds(
+        start_index, num_bars, beats_per_bar, resolution
+    )
+    print(start)
+    print(end)
+    tracks = []
+    for track in multitrack.tracks:
+        print(track[start:end].shape)
+        tracks.append(
+            pypianoroll.Track(
+                name=track.name,
+                program=track.program,
+                pianoroll=track[start:end],
+            )
+        )
+    print(tracks)
+    return pypianoroll.Multitrack(tracks=tracks, resolution=resolution)
+
+
+# %% [markdown]
+# Plot four bars of Beethoven:
+# %%
+resolution = 24
+four_bars = bars(multitrack, 0, 4, 4, resolution)
+four_bars.plot()
+fig = plt.gcf()
+for ax in fig.axes:
+    ax.set_ylim(24, 96)
+# %%
+four_bars.tracks[2].plot()
+ax = plt.gca()
+ax.set_title("Cello Track")
+ax.set_ylim(24, 96)
+# %%
