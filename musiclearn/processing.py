@@ -2,6 +2,7 @@
 Preprocessing audio data (.wav files) for analysis.
 """
 import os
+from typing import List
 from pathlib import Path
 from tensorflow import keras
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -77,7 +78,7 @@ def test_batch_maxlen():
     """Test that it retrieves data up to a max length"""
     dir = Path(config.MUSICNET_DIR) / "train_data"
     # get 1 second of data per file
-    sample_rate = int(os.getenv("MUSICNET_SAMPLE_RATE"))
+    sample_rate = int(config.MUSICNET_SAMPLE_RATE)
     batch_size = 2
     wdg = WavDataGenerator(dir, batch_size=batch_size, max_len=sample_rate)
     batch = wdg[0]
@@ -85,33 +86,73 @@ def test_batch_maxlen():
 
 
 class MIDIDataGenerator(keras.utils.Sequence):
-    """Generates multitrack piano roll tensors from MIDI files"""
+    """Generates multitrack pianoroll tensors from MIDI files."""
 
     def __init__(self, directory: os.PathLike):
         """constructor"""
+        self.directory = directory
+
+    def __getitem__(self, index):
+        """[] accessor. Get one batch as a numpy array."""
 
 
-def midi_to_multitrack(path: os.PathLike):
+def midi_to_multitrack(path: os.PathLike, resolution: int) -> pypianoroll.Multitrack:
     """"""
     assert os.path.isfile(path)
-    mt = pypianoroll.Multitrack(str(path))
+    mt = pypianoroll.read(str(path))
     return mt
 
 
-def num_bars(mt: pypianoroll.Multitrack, resolution: int = 12) -> int:
+def num_bars(multitrack: pypianoroll.Multitrack) -> int:
     """Get the integer number of bars in a Multitrack piano roll"""
-    return len(mt.downbeat) // resolution
+    assert multitrack.downbeat is not None and multitrack.resolution is not None
+    return len(multitrack.downbeat) // multitrack.resolution
 
 
-def phrase(
-    mt: pypianoroll.Multitrack,
-    idx: int,
-    resolution: int = 12,
-    bars_per_phrase: int = 4,
+def get_bar_bounds(bar_index, num_bars, beats_per_bar, resolution):
+    start = bar_index * resolution
+    end = start + (num_bars * beats_per_bar) * resolution
+    return (start, end)
+
+
+def get_phrase(
+    multitrack: pypianoroll.Multitrack,
+    start_index: int,
+    num_bars: int,
+    beats_per_bar: int,
 ):
     """Get the phrase starting at the given index, where 0 is the first
     phrase."""
-    start = idx * resolution
-    end = bars_per_phrase * resolution + start
-    tracks = [track[start:end] for track in mt.tracks]
-    return pypianoroll.Multitrack(tracks=tracks, beat_resolution=12)
+    start, end = get_bar_bounds(
+        start_index, num_bars, beats_per_bar, multitrack.resolution
+    )
+    tracks = [
+        pypianoroll.Track(
+            name=track.name, program=track.program, pianoroll=track[start:end]
+        )
+        for track in multitrack.tracks
+    ]
+
+    return pypianoroll.Multitrack(tracks=tracks, resolution=multitrack.resolution)
+
+
+def get_phrase_array(
+    multitrack: pypianoroll.multitrack, bars_per_phrase: int, beats_per_bar: int
+) -> np.array:
+    """get an array of equal length multitrack phrases from a single multitrack"""
+    # TODO
+
+
+def test_num_bars():
+    path = Path(config.MUSICNET_MIDI_DIR)
+    mid_file = list(path.glob("Beethoven/2494*.mid"))[0]
+    mt = midi_to_multitrack(mid_file, 24)
+    assert num_bars(mt) == 609
+
+
+def test_get_phrase():
+    path = Path(config.MUSICNET_MIDI_DIR)
+    mid_file = list(path.glob("Beethoven/2494*.mid"))[0]
+    mt = midi_to_multitrack(mid_file, 24)
+    first_four_bars = get_phrase(mt, 0, 4, 4)
+    assert first_four_bars.tracks[0].pianoroll.shape == (384, 128)

@@ -88,7 +88,10 @@ using a ``conductor'' recurrent layer in its decoder model to better
 capture structure at multiple levels and avoid the problem of
 ``posterior/mode collapse'' whereby a generative model learns to
 ignore its latent code and rely on autoregression
-\cite{roberts_hierarchical_2018}.
+\cite{roberts_hierarchical_2018}. This model is capable of generating
+new melodies that blend two given melodies via latent space
+interpolation.
+
 
 Another Magenta model called Music Transformer is a generative model
 that borrows its approach from the Natural Language Processing (NLP)
@@ -116,7 +119,6 @@ a causal convolutional neural network for generating raw audio waveforms,
 developed by Google DeepMind, which achieves state of the art performance in
 generating natural sounding speech from text, but is also capable of generating
 short, realistic snippets of audio music \cite{oord_wavenet_2016}.
-
 Another model named SampleRNN generates raw audio waveforms using a three-tier
 hierarchy of gated recurrent units (GRU) to model recurrent structure at
 multiple temporal resolutions \cite{mehri_samplernn_2017}.
@@ -159,7 +161,9 @@ the Lakh MIDI Dataset, which includes a collection of 45,129 Creative
 Commons licensed MIDI files of popular music songs that have been
 matched and aligned to MP3 recordings, and of which we will use a
 subset for model training and evaluation
-\cite{raffel_learning-based_2016}.
+\cite{raffel_learning-based_2016}. Including this second dataset may
+help us to generalize the modeling approach beyond European classical
+music to include other popular genres and associated instruments.
 
 \subsection{Data Preprocessing}
 
@@ -170,12 +174,13 @@ array-based representations, such as pretty\_midi
 \cite{raffel_pretty_midi_2014} and Pypianoroll
 \cite{dong_pypianoroll_2018}. In order to accommodate polyphonic
 music, we will convert each MIDI file into a pianoroll representation,
-wherein each instrument track is a sparse matrix that multi-hot
-encodes the velocity values for each of 128 possible pitch levels at
-each timestep. Because songs are typically at least a few minutes long
-and of varying length, it will not be feasible to train with entire
-songs as examples, so we will crop songs into phrases of equal numbers
-of measures, to use as training data.
+as visualized in Figure \ref{pianoroll}, wherein each instrument track
+is a sparse matrix that multi-hot encodes the velocity values for each
+of 128 possible pitch levels at each timestep. Because songs are
+typically at least a few minutes long and of varying length, it will
+not be feasible to train with entire songs as examples, so we will
+crop songs into phrases of equal numbers of measures to use as
+training data.
 
 The result of this preprocessing is that each training example will be
 a 3D tensor of shape (tracks x notes x ticks) and stacking the
@@ -186,6 +191,7 @@ training examples will produce a 4D tensor.
   \includegraphics[width=\linewidth]{first_four_bars.png}
   \caption{Pianoroll visualization of the first four measures of
     Beethoven's Serioso String Quartet}
+  \label{pianoroll}
   \Description{A pianoroll representation of cello, viola and violin
     parts from a Beethoven piece.}
 \end{figure}
