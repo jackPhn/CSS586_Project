@@ -103,9 +103,10 @@ def midi_to_multitrack(path: os.PathLike, resolution: int) -> pypianoroll.Multit
     return mt
 
 
-def num_bars(multitrack: pypianoroll.Multitrack) -> int:
-    """Get the integer number of bars in a Multitrack piano roll"""
-    assert multitrack.downbeat is not None and multitrack.resolution is not None
+def num_beats(multitrack: pypianoroll.Multitrack) -> int:
+    """Get the integer number of beats in a Multitrack piano roll"""
+    assert multitrack.downbeat is not None
+    assert multitrack.resolution is not None
     return len(multitrack.downbeat) // multitrack.resolution
 
 
@@ -133,21 +134,32 @@ def get_phrase(
         for track in multitrack.tracks
     ]
 
-    return pypianoroll.Multitrack(tracks=tracks, resolution=multitrack.resolution)
+    return pypianoroll.Multitrack(
+        tracks=tracks,
+        resolution=multitrack.resolution,
+        downbeat=multitrack.downbeat[start:end],
+        tempo=multitrack.tempo[start:end],
+    )
 
 
-def get_phrase_array(
-    multitrack: pypianoroll.multitrack, bars_per_phrase: int, beats_per_bar: int
-) -> np.array:
+def split_phrases(
+    multitrack: pypianoroll.Multitrack, bars_per_phrase: int, beats_per_bar: int
+):
     """get an array of equal length multitrack phrases from a single multitrack"""
-    # TODO
+    total_bars = num_beats(multitrack) // beats_per_bar
+    num_phrases = total_bars // bars_per_phrase
+    phrases = [
+        get_phrase(multitrack, ph * bars_per_phrase, bars_per_phrase, beats_per_bar)
+        for ph in range(num_phrases)
+    ]
+    return phrases
 
 
 def test_num_bars():
     path = Path(config.MUSICNET_MIDI_DIR)
     mid_file = list(path.glob("Beethoven/2494*.mid"))[0]
     mt = midi_to_multitrack(mid_file, 24)
-    assert num_bars(mt) == 609
+    assert num_beats(mt) == 609
 
 
 def test_get_phrase():
@@ -156,3 +168,14 @@ def test_get_phrase():
     mt = midi_to_multitrack(mid_file, 24)
     first_four_bars = get_phrase(mt, 0, 4, 4)
     assert first_four_bars.tracks[0].pianoroll.shape == (384, 128)
+
+
+def test_split_phrases():
+    path = Path(config.MUSICNET_MIDI_DIR)
+    mid_file = list(path.glob("Beethoven/2494*.mid"))[0]
+    mt = midi_to_multitrack(mid_file, 24)
+    first_16_bars = get_phrase(mt, 0, 16, 4)
+    four_phrases = split_phrases(first_16_bars, 4, 4)
+    shapes = [m.tracks[0].pianoroll.shape for m in four_phrases]
+    assert len(four_phrases) == 4
+    # assert shapes == [(384, 128), (384, 128), (384, 128), (384, 128)]
