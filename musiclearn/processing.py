@@ -110,6 +110,13 @@ def num_beats(multitrack: pypianoroll.Multitrack) -> int:
     return len(multitrack.downbeat) // multitrack.resolution
 
 
+def test_num_beats():
+    path = Path(config.MUSICNET_MIDI_DIR)
+    mid_file = list(path.glob("Beethoven/2494*.mid"))[0]
+    mt = midi_to_multitrack(mid_file, 24)
+    assert num_beats(mt) == 609
+
+
 def get_bar_bounds(bar_index, num_bars, beats_per_bar, resolution):
     start = bar_index * resolution
     end = start + (num_bars * beats_per_bar) * resolution
@@ -142,6 +149,14 @@ def get_phrase(
     )
 
 
+def test_get_phrase():
+    path = Path(config.MUSICNET_MIDI_DIR)
+    mid_file = list(path.glob("Beethoven/2494*.mid"))[0]
+    mt = midi_to_multitrack(mid_file, 24)
+    first_four_bars = get_phrase(mt, 0, 4, 4)
+    assert first_four_bars.tracks[0].pianoroll.shape == (384, 128)
+
+
 def split_phrases(
     multitrack: pypianoroll.Multitrack, bars_per_phrase: int, beats_per_bar: int
 ):
@@ -155,21 +170,6 @@ def split_phrases(
     return phrases
 
 
-def test_num_bars():
-    path = Path(config.MUSICNET_MIDI_DIR)
-    mid_file = list(path.glob("Beethoven/2494*.mid"))[0]
-    mt = midi_to_multitrack(mid_file, 24)
-    assert num_beats(mt) == 609
-
-
-def test_get_phrase():
-    path = Path(config.MUSICNET_MIDI_DIR)
-    mid_file = list(path.glob("Beethoven/2494*.mid"))[0]
-    mt = midi_to_multitrack(mid_file, 24)
-    first_four_bars = get_phrase(mt, 0, 4, 4)
-    assert first_four_bars.tracks[0].pianoroll.shape == (384, 128)
-
-
 def test_split_phrases():
     path = Path(config.MUSICNET_MIDI_DIR)
     mid_file = list(path.glob("Beethoven/2494*.mid"))[0]
@@ -179,3 +179,18 @@ def test_split_phrases():
     shapes = [m.tracks[0].pianoroll.shape for m in four_phrases]
     assert len(four_phrases) == 4
     # assert shapes == [(384, 128), (384, 128), (384, 128), (384, 128)]
+
+
+def pianoroll_to_numpy(multitrack: pypianoroll.Multitrack):
+    """Convert a pypianoroll Multitrack object to a numpy 3D array
+    of shape (tracks x time steps x note values)"""
+    return np.array([track.pianoroll for track in multitrack.tracks])
+
+
+def test_pianoroll_to_numpy():
+    path = Path(config.MUSICNET_MIDI_DIR)
+    mid_file = list(path.glob("Beethoven/2494*.mid"))[0]
+    mt = midi_to_multitrack(mid_file, 24)
+    first_four_bars = get_phrase(mt, 0, 4, 4)
+    np_four_bars = pianoroll_to_numpy(first_four_bars)
+    assert np_four_bars.shape == (4, 384, 128)
