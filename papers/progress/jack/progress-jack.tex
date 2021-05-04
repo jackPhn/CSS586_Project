@@ -39,7 +39,7 @@ time-domain sound pressure data, frequency-domain representation of the sound pr
 data type, music generation involves the application of a sequence model such as recurrent neural network 
 (RNN). The focus of my contribution is using a combination of time-domain and frequency-domain information. 
 The current proges includes literature review, data exploration, learning about different representations 
-of an audio signal. I am working on building a data pipeline and experiencing with RNN models.
+of an audio signal. We are working on building a data pipeline and experimenting with various RNN models.
 \end{abstract}
 
 \keywords{deep learning, neural networks, music generation, RNN}
@@ -62,12 +62,35 @@ models using spectrogram as input, and generate novel music segments using these
 
 \section{Related Work}
 
+Musical generative modeling is an interesting area of research. Recent innovations in this domain involve
+deep learning using a variety of modelling techniques. This section presents some of the recent works in
+this domain.
 
+Historically, the modeling of raw audio data is extremely challenging because a single second of audio recording
+could contains up to 44,100 samples. Google DeepMind's WaveNet is one of the first models
+that successfully learn from raw audio data \cite{oord_wavenet_2016}. It is designed using a technique called 
+1D dialated causal convolution that allows an output to capture information from many inputs with a minimal
+computational cost. WaveNet was designed for the primary purpose of generating speech which mimics any human voice.
+Since the architecture can be used to model any raw audio signal, it was also used to generate music.
+Although the outputs were far from being any masterpieces, the results show the possibility of generating musical
+pieces from the raw audio data.
 
-\section{Planned Methods}
+An alternatve representation of the time-series signal is the frequency-domain representation. Existing generative
+models for audio have largely focused on the time-domain waveforms. In 2019, a generative model for audio in the
+frequency domain called MelNet was introduced \cite{vasquez2019melnet}. MelNet models the spectrograms, which are
+time-frequency representations of audio. The advantage of spectrograms is that they are compressed expressions of 
+the time-domain signal. MelNet leverages this advantage to generate high-fidelity audio samples, which capture 
+structures that are still challenging for time-domain models. 
+
+\section{Planned Work}
+The focus of this project is generating short musical pieces by modeling the spectrograms of input audio. The
+following subsections describe our plan toward accomplishing this objective.
 
 \subsection{Datasets}
-
+We use a dataset called MusicNet published by University of Washington, the department of Com[uter Science 
+\cite{thickstun2017learning}. This dataset is a collection of 330 freely-licensed classical music recordings 
+captured under various studio and microphone conditions. The recordings are in .wav raw audio format and are
+polyphonic, meaning that multiple musical notes could present at a single point in time.
 
 \subsection{Data Processing}
 
@@ -75,8 +98,7 @@ models using spectrogram as input, and generate novel music segments using these
 \subsection{Model Building}
 
 \section{Progress}
-Talk about learning of RNN, GRU, and LSTM
-Talk about data exploration
+
 
 \section{Future Work}
 
