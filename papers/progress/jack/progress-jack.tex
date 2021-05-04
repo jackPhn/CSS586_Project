@@ -106,7 +106,7 @@ built-in functions for performing this tranformation. An example of a mel spectr
 \begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{mel_spec.png}
-  \caption{Mel spectrogram of a 10 second sound segment from the dataset. The color represents the amplitude in dB.}
+  \caption{Mel spectrogram of a 10 second sound segment from the dataset. The color represents the magnitude in dB.}
   \label{spectrogram}
 \end{figure}
 
@@ -115,10 +115,16 @@ We will implement sequence models such as RNN, GRU, and LSTM to model the mel sp
 generate novel spectrograms that could be converted back to audio.
 
 \section{Progress}
-Initially, a lot of time was spent on understanding different representation of the input data. We also learned 
-about the basics of sequence models such as RNN, GRU, and LSTM. Because the dataset is large and cannot be loaded into 
-the memory at once, we are working on a data pipeline that processes the raw audio files as described in the Section 
-Data Processing and presents training examples one by one to a model.
+Initially, a lot of time was spent on understanding different representations of the input data and on selecting a
+viable representation that could be used to train a model. The key is that we can also reliably convert this
+representation back to a sound wave. A number of representations are available: the raw waveform, the complex numbers,
+the FFT of the waveform, the spectrogram, the mel spectrogram, and the mel frequency ceptral coefficients (MFCC). We decided
+to use the mel spectrogram because it is a compressed version of the sound wave, which could be reliably convert back to 
+audio. We also learned about the basics of sequence models such as RNN, GRU, and LSTM. Because the dataset is large and 
+cannot be loaded into the memory at once, we are working on a data pipeline that processes the raw audio files and presents training examples 
+one by one to a model. This pipeline will slice the input files into short audio fragments to be used as input. Then,
+it will process the fragments as described in Section Data Processing. The resulting spectrograms will be save
+to disk. The training code will load them into memory as needed to train the model.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{progress-jack}
