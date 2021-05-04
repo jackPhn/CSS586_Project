@@ -62,6 +62,20 @@ models using spectrogram as input, and generate novel music segments using these
 
 \section{Related Work}
 
+Musical generative modeling is an interesting area of research. Recent innovations in this domain involve
+deep learning using a variety of modelling techniques. This section presents some of the recent works in
+this domain.
+
+Historically, the modelling of raw audio data is extremely challenging because a single second of audio recording
+could contains up to 44,100 samples in the case of music. Google DeepMind's WaveNet is one of the first models
+that successfully learn from raw audio data \cite{oord_wavenet_2016}. It is designed using a technique called 
+1D dialated causal convolution that allows an output to capture information from many inputs with a minimal
+computational cost. WaveNet was designed for the primary purpose of generating speech which mimics any human voice.
+However, since the architecture can be used to model any raw audio signal, it was also used to generate music.
+Although the outputs were far from being any masterpieces, the results show the possibility of generating musical
+pieces from the raw audio data.
+
+
 
 
 \section{Planned Methods}
@@ -75,8 +89,7 @@ models using spectrogram as input, and generate novel music segments using these
 \subsection{Model Building}
 
 \section{Progress}
-Talk about learning of RNN, GRU, and LSTM
-Talk about data exploration
+
 
 \section{Future Work}
 
