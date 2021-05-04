@@ -87,20 +87,38 @@ The focus of this project is generating short musical pieces by modeling the spe
 following subsections describe our plan toward accomplishing this objective.
 
 \subsection{Datasets}
-We use a dataset called MusicNet published by University of Washington, the department of Com[uter Science 
+We use a dataset called MusicNet published by University of Washington, the department of Computer Science 
 \cite{thickstun2017learning}. This dataset is a collection of 330 freely-licensed classical music recordings 
 captured under various studio and microphone conditions. The recordings are in .wav raw audio format and are
-polyphonic, meaning that multiple musical notes could present at a single point in time.
+polyphonic, meaning that multiple musical notes could present at a single time point. Furthermore, the music is
+performed by multiple instruments, which have unique sound signatures. 
 
 \subsection{Data Processing}
+Each training example is a raw sound fragment, which has a length of several seconds, taken from an audio recording.
+We will transform the time-domain sample to the mel spectrogram representation. The mel scale is a logarithmic
+transformation of a signal frequency. The idea of this transformation is to replicate the human perception of the 
+difference between two sounds of different frequencies. For example, a person can easily tell the difference between 
+100 Hz and 200 Hz, but cannot distinguish 1000 Hz and 1100 Hz. This transformation is done by splitting the sample
+into overlapping windows, performing the Short Time Fourier Transformation on each window, converting the frequencies
+to mel scale, and finally converting the amplitude to decibels. Librosa, a python package for music analysis, has
+built-in functions for performing this tranformation. An example of a mel spectrogam is shown in Figure \ref{spectrogram}.
 
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{mel_spec.png}
+  \caption{Mel spectrogram of a 10 second sound segment from the dataset. The color represents the amplitude in dB.}
+  \label{spectrogram}
+\end{figure}
 
 \subsection{Model Building}
+We will implement sequence models such as RNN, GRU, and LSTM to model the mel spectrogram and use these models to
+generate novel spectrograms that could be converted back to audio.
 
 \section{Progress}
-
-
-\section{Future Work}
+Initially, a lot of time was spent on understanding different representation of the input data. We also learned 
+about the basics of sequence models such as RNN, GRU, and LSTM. Because the dataset is large and cannot be loaded into 
+the memory at once, we are working on a data pipeline that processes the raw audio files as described in the Section 
+Data Processing and presents training examples one by one to a model.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{progress-jack}
