@@ -1,6 +1,11 @@
+# %% [markdown]
+# # Exploring MIDI Music Data
+#
+# An exploratory notebook for reading and manipulating MIDI music data.
 # %%
 import pathlib
 import sys
+import numpy as np
 import note_seq
 import music21
 import pretty_midi
@@ -8,11 +13,14 @@ import pandas as pd
 import pypianoroll
 import matplotlib.pyplot as plt
 from miditoolkit import midi, pianoroll
+from tensorflow.python.keras.layers.core import RepeatVector
+from tensorflow.python.keras.layers.wrappers import TimeDistributed
 
 sys.path.append("..")
 from musiclearn import config
 
 # %%
+# Picking one song from MusicNet dataset
 midi_dir = pathlib.Path(config.MUSICNET_MIDI_DIR)
 mid_2494 = midi_dir / "Beethoven" / "2494_qt11_1.mid"
 
@@ -120,11 +128,8 @@ def bars(multitrack, start_index, num_bars, beats_per_bar, resolution):
     start, end = get_bar_bounds(
         start_index, num_bars, beats_per_bar, resolution
     )
-    print(start)
-    print(end)
     tracks = []
     for track in multitrack.tracks:
-        print(track[start:end].shape)
         tracks.append(
             pypianoroll.Track(
                 name=track.name,
@@ -132,7 +137,6 @@ def bars(multitrack, start_index, num_bars, beats_per_bar, resolution):
                 pianoroll=track[start:end],
             )
         )
-    print(tracks)
     return pypianoroll.Multitrack(tracks=tracks, resolution=resolution)
 
 
@@ -146,8 +150,95 @@ fig = plt.gcf()
 for ax in fig.axes:
     ax.set_ylim(24, 96)
 # %%
-four_bars.tracks[2].plot()
+viola_track = four_bars.tracks[2]
+viola_track.plot()
 ax = plt.gca()
-ax.set_title("Cello Track")
+ax.set_title("Viola Track")
 ax.set_ylim(24, 96)
+
+# %% [markdown]
+#
+# ## Pianoroll sequence autoencoder model
+#
+# Testing out training a simple autoencoder model on a single track.
+
+# %%
+# Prepare training examples from the binarized cello track
+resolution = 12
+beats_per_bar = 4
+bars_per_phrase = 2
+total_bars = get_num_beats(multitrack, resolution) // beats_per_bar
+total_phrases = total_bars // bars_per_phrase
+
+# %%
+viola_clips = [
+    bars(
+        multitrack,
+        i * bars_per_phrase,
+        bars_per_phrase,
+        beats_per_bar,
+        resolution,
+    )
+    .tracks[2]
+    .binarize()
+    .pianoroll.astype(int)
+    for i in range(total_phrases)
+]
+np_viola = np.array(viola_clips)
+
+# %%
+np_viola
+
+# %% [markdown]
+#
+# The viola only plays notes 48-70, notes outside this range are all zeroes
+# We can trim the note space to reduce dimensionality and avoid the model trying
+# to fit notes outside the viola's range.
+# %%
+np_viola.sum(axis=(0, 1))
+
+# %%
+np_viola = np_viola[:, :, 48:70]
+np_viola.sum(axis=(0, 1))
+
+# %%
+# make the features ordinal
+np_viola = np.argmax(np_viola, axis=2).astype(float)
+np_viola = np_viola.reshape(np_viola.shape[0], np_viola.shape[1], 1)
+
+# %%
+np_viola
+# %%
+from tensorflow.keras import utils, layers, Model, optimizers, Sequential
+
+# %%
+n_timesteps = np_viola.shape[1]
+n_features = np_viola.shape[2]
+
+# %%
+model = Sequential()
+model.add(
+    layers.LSTM(
+        256,
+        activation="relu",
+        input_shape=(n_timesteps, n_features),
+    )
+)
+model.add(layers.RepeatVector(n_timesteps))
+model.add(layers.LSTM(256, activation="relu", return_sequences=True))
+model.add(
+    layers.TimeDistributed(layers.Dense(n_features, activation="softmax"))
+)
+model.compile(optimizer="adam", loss="categorical_crossentropy")
+utils.plot_model(model, show_shapes=True)
+
+# %%
+history = model.fit(np_viola, np_viola, epochs=30)
+# history = model.fit(np_viola[0:1, :, :], np_viola[0:1, :, :], epochs=100)
+# %%
+yhat = model.predict(np_viola)
+preds = np.argmax(yhat, axis=2)
+# %%
+preds.sum(axis=1)
+
 # %%
