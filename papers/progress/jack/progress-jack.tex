@@ -10,8 +10,8 @@
 \setcopyright{none}
 \renewcommand\footnotetextcopyrightpermission[1]{}
 \pagestyle{plain}
-\title{Progress Report for CSS 586: \\
-Music Transcription}
+\title{Progress Report for CSS 586 Project: \\
+Music Generation Using Deep Learning}
 
 %%
 %% The "author" command and its associated commands are used to define
@@ -31,22 +31,52 @@ Music Transcription}
 
 \begin{abstract}
 
+The original goal of the project is music transcription, which is the translation of audio data
+to symbolic representation of musical notations. With further consideration, we decided to focus on 
+a different problem to better align our work. The new objective is music generation using deep learning.
+There are several methods that could be used to generate new music from a corpus of training data: MIDI, 
+time-domain sound pressure data, frequency-domain representation of the sound pressure. Regardless of the 
+data type, music generation involves the application of a sequence model such as recurrent neural network 
+(RNN). The focus of my contribution is using a combination of time-domain and frequency-domain information. 
+The current proges includes literature review, data exploration, learning about different representations 
+of an audio signal. I am working on building a data pipeline and experiencing with RNN models.
 \end{abstract}
 
-\keywords{deep learning, neural networks, music}
+\keywords{deep learning, neural networks, music generation, RNN}
 
 \maketitle
 
 \section{Introduction}
 
+Recurrent Neural Network (RNN) has shown its capability in recent years to model time-series sequences. 
+Advanced version of RNN such as Gated Recurrent Unit (GRU) and Long Short-Term Memory (LSTM) have been 
+successfully used for applications such as voice recognition, text to speech, and other applications 
+that involve time-series data. RNN could also be used to generate novel sequences of texts or sounds.
 
+A music recording is a digitized time-varying sequence of pressure displacement. Each point in the 
+sequence represents the amplitude of the pressure strength at a moment in time. The sequence could 
+also be converted to the frequency-domain representation, which describes its sound compoments in terms 
+of amplitude and frequency. A popular representation of a sound segment is spectrogram. The goal of this 
+project is generative modeling for short polyphonic music segments. We will build and train deep learning 
+models using spectrogram as input, and generate novel music segments using these models.
 
 \section{Related Work}
 
 
+
 \section{Planned Methods}
 
+\subsection{Datasets}
+
+
+\subsection{Data Processing}
+
+
+\subsection{Model Building}
+
 \section{Progress}
+Talk about learning of RNN, GRU, and LSTM
+Talk about data exploration
 
 \section{Future Work}
 
