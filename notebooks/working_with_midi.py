@@ -125,9 +125,7 @@ def get_bar_bounds(bar_index, num_bars, beats_per_bar, resolution):
 
 # %%
 def bars(multitrack, start_index, num_bars, beats_per_bar, resolution):
-    start, end = get_bar_bounds(
-        start_index, num_bars, beats_per_bar, resolution
-    )
+    start, end = get_bar_bounds(start_index, num_bars, beats_per_bar, resolution)
     tracks = []
     for track in multitrack.tracks:
         tracks.append(
@@ -141,16 +139,19 @@ def bars(multitrack, start_index, num_bars, beats_per_bar, resolution):
 
 
 # %% [markdown]
-# Plot four bars of Beethoven:
+# Plot a bar of Beethoven:
+
 # %%
 resolution = 24
-four_bars = bars(multitrack, 0, 4, 4, resolution)
-four_bars.plot()
-fig = plt.gcf()
-for ax in fig.axes:
-    ax.set_ylim(24, 96)
+fig, axes = plt.subplots(4, sharex=True, sharey=True)
+first_bar = bars(multitrack, 0, 1, 4, resolution)
+first_bar.plot(axes)
+for ax in axes:
+    ax.set_ylim(24, 72)
+plt.savefig("../papers/progress/alex/first_bar.png")
+
 # %%
-viola_track = four_bars.tracks[2]
+viola_track = first_bar.tracks[2]
 viola_track.plot()
 ax = plt.gca()
 ax.set_title("Viola Track")
@@ -226,9 +227,7 @@ model.add(
 )
 model.add(layers.RepeatVector(n_timesteps))
 model.add(layers.LSTM(256, activation="relu", return_sequences=True))
-model.add(
-    layers.TimeDistributed(layers.Dense(n_features, activation="softmax"))
-)
+model.add(layers.TimeDistributed(layers.Dense(n_features, activation="softmax")))
 model.compile(optimizer="adam", loss="categorical_crossentropy")
 utils.plot_model(model, show_shapes=True)
 

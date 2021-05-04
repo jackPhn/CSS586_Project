@@ -11,7 +11,7 @@
 \renewcommand\footnotetextcopyrightpermission[1]{}
 \pagestyle{plain}
 \title{Progress Report for CSS 586 Course Project: \\
-Modeling Latent Patterns in Music}
+Modeling Latent Patterns to Generate Symbolic Music}
 
 %%
 %% The "author" command and its associated commands are used to define
@@ -30,14 +30,21 @@ Modeling Latent Patterns in Music}
 }
 
 \begin{abstract}
-This report explores recent research in symbolic music modeling with
-deep learning and provides a progress report on a course project to
-train a generative model of classical and popular music on the
-MusicNet and Lakh MIDI datasets.
+  This report explores recent research in symbolic music modeling with
+  deep learning and provides a progress report on a course project to
+  train and evaluate generative models of classical and popular music
+  on the MusicNet and Lakh MIDI datasets.
 \end{abstract}
 
-\keywords{deep learning, sequence learning, generative modeling,
-  recurrent neural networks, music, MIDI}
+\keywords{
+  generative modeling,
+  midi,
+  music,
+  recurrent neural networks,
+  sequence learning,
+  symbolic music,
+  deep learning
+}
 
 \maketitle
 
@@ -58,61 +65,79 @@ domain representation, or they may be trained on a digital symbolic
 representation of music, the most common of which is MIDI (Musical
 Instrument Digital Interface) notation. MIDI is an encoding of music
 as streams of bytes in one or more tracks or channels, each
-representing a sequence of 128 possible pitch values, along with
-timing, pressure and instrument values. A music transcription model
-may transcribe an audio signal as a MIDI score, which can easily be
+representing a sequence of 128 possible pitch values (where 0 is the
+lowest and 127 is the highest), along with timing, pressure and
+instrument identifier values. A music transcription model may
+transcribe an audio signal as a MIDI score, which can easily be
 converted into other symbolic representations such as sheet music for
 human performers to read from, while a synthesizer model can convert
 MIDI representations into audio signals. A generative music model can
-be either trained to generate raw audio, or trained to produce a score
-that must be played by either a synthesizer or by humans to produce an
-audio music performance.
+be either trained to generate raw audio, or trained to produce a
+symbolic score that must be played by either a synthesizer or by
+humans to produce an audio music performance. This project focuses on
+generative modeling of symbolic (MIDI) music to generate original
+musical compositions.
 
 \section{Related Work}
 
 The state of the art in music generation has a long way to go before
 it can consistently generate music scores or performances that would
-be enjoyable and popular to listen to. There are a number of
-interesting, recent papers and projects in the area of music machine
-learning, several of which focus on learning long-term dependencies in
-music to produce longer clips with coherent structure.
+be enjoyable and popular for humans to listen to, but a number of
+recent research projects have shown promising progress in this area.
 
 Google's \href{https://magenta.tensorflow.org/}{Magenta} is an
 umbrella project for music deep learning research and development of
 software tools to expose these models for use by creative artists and
 students.
 
-MusicVAE, part of the Magenta project, is a variational LSTM
-autoencoder for MIDI that incorporates a novel hierarchical structure
-using a ``conductor'' recurrent layer in its decoder model to better
-capture structure at multiple levels and avoid the problem of
-``posterior/mode collapse'' whereby a generative model learns to
-ignore its latent code and rely on autoregression
+MusicVAE, part of the Magenta project, is a variational Long
+Short-Term Memory (LSTM) autoencoder for MIDI that incorporates a
+novel hierarchical structure using a ``conductor'' recurrent layer in
+its decoder model to better capture structure at multiple levels and
+avoid the problem of ``posterior/mode collapse'' whereby a generative
+model learns to ignore its latent code and rely on autoregression
 \cite{roberts_hierarchical_2018}. This model is capable of generating
 new melodies that blend two given melodies via latent space
 interpolation.
-
 
 Another Magenta model called Music Transformer is a generative model
 that borrows its approach from the Natural Language Processing (NLP)
 domain, using a self-attention network to model MIDI music as a
 sequence of discrete tokens with relative positional dependencies
-\cite{huang_music_2018}. This model was trained on the MAESTRO dataset
-of Piano-e-competition performances \cite{hawthorne2019enabling} and
-its generated piano music received favorable qualitative (Likert
-scale) ratings from human listeners \cite{huang_music_2018}.
+\cite{huang_music_2018}. The focus of this model is on learning
+long-term dependencies in music to produce longer clips of music with
+coherent structure. Music Transformer was trained on a dataset of
+Piano-e-competition performances \cite{hawthorne2019enabling} and its
+generated piano music received favorable qualitative (Likert scale)
+ratings from human listeners for its resemblance to human-composed
+music \cite{huang_music_2018}.
 
-MuseGAN \cite{dong2017musegan} is an application of Generative Adversarial
-Networks to polyphonic MIDI music generation, trained on four-bar phrases of a
-multi-track pianoroll representation of rock songs from the Lakh Midi Dataset
-\cite{raffel_learning-based_2016}.
+MuseGAN \cite{dong2017musegan} is an application of Generative
+Adversarial Networks (GAN) to polyphonic MIDI music generation,
+trained on four-bar phrases of a multi-track pianoroll representation
+of rock songs from the Lakh Midi Dataset
+\cite{raffel_learning-based_2016}. Like MusicVAE, MuseGAN includes a
+two-level generator that first samples latent codes at the phrase or
+bar level, then generates notes within the bars, to produce
+longer-term structural patterns.
 
-A major advantage of working with the symbolic representation of music is that
-it is of far lower dimensionality than the raw audio waveforms of a recorded
-performance, which makes it less computationally expensive. However, there are
-many aspects of musical performance that are not captured by a symbolic
-representation, so the expressiveness of symbolic generative models is
-constrained \cite{manzelli_conditioning_2018}.
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{song_structure.png}
+  \caption{Diagram of the hierarchical structure of a musical
+    composition, from the MuseGAN paper \cite{dong2017musegan}.}
+  \label{song_structure}
+  \Description{A diagram showing the hierarchical structure of songs,
+    to paragraphs, to phrases, to bars, to, beats, to pixels.}
+\end{figure}
+
+A major advantage of working with the symbolic representation of music
+is that it is of far lower dimensionality than the raw audio waveforms
+of a recorded performance, which makes it less computationally
+expensive. However, there are many aspects of musical performance
+style that are not captured by a symbolic representation, so the
+expressiveness of symbolic generative models is limited
+\cite{manzelli_conditioning_2018}.
 
 Other research has focused on modeling raw audio waveforms directly. WaveNet is
 a causal convolutional neural network for generating raw audio waveforms,
@@ -123,19 +148,8 @@ Another model named SampleRNN generates raw audio waveforms using a three-tier
 hierarchy of gated recurrent units (GRU) to model recurrent structure at
 multiple temporal resolutions \cite{mehri_samplernn_2017}.
 
-Jukebox by OpenAI utilizes a vector-quantized variational autoencoder
-(VQ-VAE) to compress raw audio into a sequence of discrete codes and
-models these sequences using autoregressive transformers to generate
-music of various popular genres, including singing and lyrics
-\cite{dhariwal2020jukebox}.
-
-Audio data can also be modeled in the frequency domain through the use of
-Fourier analysis. The recent MelNet model is trained on spectrograms and can
-learn musical structures such as melody and harmony and variations in volume,
-timbre and rhythm \cite{vasquez2019melnet}.
-
 Prior work points out that the division between symbolic music notes
-and the sounds of music is analogous to the division between symbolic
+and music performances, is analogous to the division between symbolic
 language and utterances in speech, which may inspire ideas for
 combining the two approaches \cite{hawthorne2019enabling}. A paper
 from Boston University describes an effort to combine the symbolic and
@@ -148,7 +162,7 @@ raw audio generator \cite{manzelli_conditioning_2018}.
 
 This research project will focus on the generative modeling of
 symbolic music using MIDI data as inputs, because of the advantages of
-symbolic music models in representing long-term structure in musical
+symbolic music models in representing long-range patterns in musical
 compositions to produce generations with coherent structure and use of
 repetition over long time scales.
 
@@ -159,7 +173,7 @@ which is a collection of 330 freely licensed European classical music
 recordings with aligned MIDI scores \cite{thickstun2017learning}, and
 the Lakh MIDI Dataset, which includes a collection of 45,129 Creative
 Commons licensed MIDI files of popular music songs that have been
-matched and aligned to MP3 recordings, and of which we will use a
+matched and aligned to MP3 recordings, and of which I plan to use a
 subset for model training and evaluation
 \cite{raffel_learning-based_2016}. Including this second dataset may
 help us to generalize the modeling approach beyond European classical
@@ -169,50 +183,66 @@ music to include other popular genres and associated instruments.
 
 Several choices must be made in how to preprocess binary MIDI files
 into training examples for a neural network. There are multiple
-open-source Python packages capable of reading MIDI files into NumPy
-array-based representations, such as pretty\_midi
-\cite{raffel_pretty_midi_2014} and Pypianoroll
-\cite{dong_pypianoroll_2018}. In order to accommodate polyphonic
-music, we will convert each MIDI file into a pianoroll representation,
-as visualized in Figure \ref{pianoroll}, wherein each instrument track
-is a sparse matrix that multi-hot encodes the velocity values for each
-of 128 possible pitch levels at each timestep. Because songs are
-typically at least a few minutes long and of varying length, it will
-not be feasible to train with entire songs as examples, so we will
-crop songs into phrases of equal numbers of measures to use as
-training data.
+open-source Python packages that assist with the process of reading
+MIDI files from their binary on-disk representations into Python
+objects, such as pretty\_midi \cite{raffel_pretty_midi_2014} and
+Pypianoroll \cite{dong_pypianoroll_2018}.
+
+In order to accommodate polyphonic music, I will convert each MIDI
+file into a pianoroll representation, as visualized in Figure
+\ref{pianoroll}, wherein each instrument track is a sparse matrix that
+multi-hot encodes the velocity values for each of 128 possible pitch
+levels at each timestep. To reduce dimensionality, I will clip the
+note pitch values to a narrower range, excluding the rarely used notes
+in the extreme high and low octaves, and encode chords (combinations
+of notes played simultaneously on the same instrument) as distinct
+tokens, so that
+
+Because songs are typically at least a few minutes long and of varying
+length, it will not be feasible to train with entire songs as
+examples, so we will crop songs into phrases of equal numbers of
+measures to use as training data.
 
 The result of this preprocessing is that each training example will be
 a 3D tensor of shape (tracks x ticks x pitches) and stacking the
 training examples will produce a 4D tensor.
 
+While I plan to model music with multiple instrument tracks, I
+anticipate the need to model only a fixed selection of instrument
+parts, similar to how MusicVAE models three-part (drum, bass and
+melody) \cite{roberts_hierarchical_2018} and MuseGAN models five-part
+(drum, bass, guitar, string, piano) arrangements.
+
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\linewidth]{first_four_bars.png}
-  \caption{Pianoroll visualization of the first four measures of
+  \includegraphics[width=\linewidth]{first_bar.png}
+  \caption{Pianoroll visualization of the first measure of
     Beethoven's Serioso String Quartet}
   \label{pianoroll}
   \Description{A pianoroll representation of cello, viola and violin
     parts from a Beethoven piece.}
 \end{figure}
 
-Data augmentation is also possible and we plan to test its impact on
-our results--the literature suggests augmentation via pitch shifting
-the entire training example up or down by up to six semitones, and
+Data augmentation is also possible and I plan to test its impact on
+the results--the literature suggests augmentation via pitch shifting
+each training example up or down by up to six semitones, and
 increasing or reducing the speed by up to 10\% in order to create
 additional training examples and reduce overfitting
 \cite{oore_this_2018}.
 
-\subsection{Model Fitting}
+\subsection{Model Design}
 
-We will explore several modeling approaches to generating symbolic music:
+I plan to utilize recurrent neural networks with LSTM or GRU cells to
+model the sequential structure of music, stacking multiple layers to
+allow the network to learn at multiple levels of abstraction.
 
-\begin{itemize}
-  \item{Sliding window sequence prediction with RNNs (LSTM/GRU)}
-  \item{Sliding window sequence prediction with Transformers}
-  \item{Latent space interpolation with Sequential VAEs}
-  \item{Latent space interpolation with Sequential GANs}
-\end{itemize}
+There are two general methods of generating sequences from a model:
+sliding window prediction, where a model is trained on a fixed length
+sequence and then used to predict the next item in the sequence
+repeatedly; and latent space interpolation, where a model learns
+random distributions of latent code embeddings for the sequences and
+draws from the distributions to generate new samples. I plan to
+attempt both of these approaches and compare the results.
 
 \subsection{Model Evaluation}
 
@@ -230,19 +260,43 @@ probabilistically evaluating how similar the generations are to known
 sample distributions of real music \cite{yang_evaluation_2020}. These
 metrics include counts, ranges, histograms and transition matrices of
 pitches and note lengths, then the Kullback-Leibler divergence and
-overlapping area of the probability density functions are use to
+overlapping area of the probability density functions are used to
 compare against known reference distributions per musical genre
 \cite{yang_evaluation_2020}. Due to the cost and time requirements
 associated with designing a human subjects experiment, we plan to
-utilize this quantitative approach to generation quality assessment.
+utilize this quantitative approach to the quality assessment of
+generated samples.
 
 \section{Progress and Remaining Work}
 
-At this stage, we have decided on the modeling problem, downloaded the
-MIDI datasets, and begun exploring them to learn how to interpret,
-process, and visualize them. We have started writing a training data
-processing pipeline that will provide batches of training examples to
-Keras model layers for fitting.
+At this stage, I have decided on MIDI generation as the modeling
+problem, downloaded several MIDI datasets, and begun exploring them to
+learn how to interpret, process, and visualize them.
+
+I have implemented several pianoroll data processing functions that
+crop sections of MIDI files into fixed-length training examples
+consisting of multi-track note sequences in symbolic time (beats) at a
+given time resolution. I have started implementing a training data
+processing pipeline that will read MIDI files from disk and transform
+them into the pianoroll-style tensor representation, providing batches
+of training examples to Keras model layers for fitting.
+
+I have started designing a simple LSTM autoencoder to model short
+(e.g. 16 beats or 4 bars) clips of monophonic (single instrument
+track) music, in order to learn the basics of sequence model
+architecture. I will create a sequence predictor model with a similar
+architecture and compare it to the autoencoder. Next I will add
+support for polyphonic music with 3-5 instrument tracks. Once
+polyphonic music generation is working well, I plan to increase the
+length of the sequences and make adjustments to the model architecture
+to permit it to model longer phrases and paragraphs of music.
+
+I aim to build upon the hierarchical decoding approach taken in the
+MusicVAE \cite{roberts_hierarchical_2018} and MuseGAN
+\cite{dong2017musegan} papers, possibly adding more than two recurrent
+layers in the decoder, to address a key challenge in generative music
+modeling: the ability to learn the layered patterns in music to
+produce compositions with convincing long-term structure.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{progress-alex}
