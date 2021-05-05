@@ -41,9 +41,7 @@ def get_bar_bounds(bar_index, num_bars, beats_per_bar, resolution):
 
 # %%
 def bars(multitrack, start_index, num_bars, beats_per_bar, resolution):
-    start, end = get_bar_bounds(
-        start_index, num_bars, beats_per_bar, resolution
-    )
+    start, end = get_bar_bounds(start_index, num_bars, beats_per_bar, resolution)
     tracks = []
     for track in multitrack.tracks:
         tracks.append(
@@ -61,19 +59,9 @@ def bars(multitrack, start_index, num_bars, beats_per_bar, resolution):
 
 # %%
 resolution = 24
-fig, axes = plt.subplots(4, sharex=True, sharey=True)
 first_bar = bars(multitrack, 0, 1, 4, resolution)
-first_bar.plot(axes)
-for ax in axes:
-    ax.set_ylim(24, 72)
-plt.savefig("../papers/progress/alex/first_bar.png")
-
 # %%
 viola_track = first_bar.tracks[2]
-viola_track.plot()
-ax = plt.gca()
-ax.set_title("Viola Track")
-ax.set_ylim(24, 96)
 
 # %% [markdown]
 #
@@ -136,34 +124,38 @@ print(shape)
 
 # %%
 opt = optimizers.Adam(learning_rate=0.0001)
-# opt = optimizers.RMSprop(learning_rate=0.0001)
-# opt = optimizers.SGD()
+act = "tanh"
 model = Sequential()
 model.add(
     layers.LSTM(
-        128,
+        512,
         activation="tanh",
         input_shape=(n_timesteps, n_features),
         return_sequences=True,
     )
 )
-model.add(layers.LSTM(64, activation="tanh"))
-model.add(layers.RepeatVector(n_timesteps))
-model.add(layers.LSTM(64, activation="tanh", return_sequences=True))
-model.add(layers.LSTM(128, activation="tanh", return_sequences=True))
-model.add(
-    layers.TimeDistributed(layers.Dense(n_features, activation="softmax"))
-)
+model.add(layers.LSTM(128, activation=act, return_sequences=True))
+model.add(layers.LSTM(128, activation=act, return_sequences=True))
+model.add(layers.LSTM(512, activation=act, return_sequences=True))
+model.add(layers.TimeDistributed(layers.Dense(n_features, activation="softmax")))
 model.compile(
-    optimizer=opt, loss="categorical_crossentropy", metrics=["accuracy"]
+    optimizer=opt,
+    # loss="categorical_crossentropy",
+    loss="kullback_leibler_divergence",
+    metrics=["categorical_accuracy"],
 )
-utils.plot_model(model, show_shapes=True)
+# utils.plot_model(model, show_shapes=True)
 
 # %%
-history = model.fit(np_viola, np_viola, epochs=1000)  # , batch_size=64)
-# history = model.fit(np_viola[0:1, :, :], np_viola[0:1, :, :], epochs=100)
+history = model.fit(np_viola, np_viola, epochs=500)
+
 # %%
 yhat = model.predict(np_viola)
 yhat[0, :, 0]
-(yhat > 0.5)
+preds = (yhat > 0.5).astype(int)
+# %%
+np.argmax(preds[0, :, :], axis=1)
+# %%
+np.argmax(np_viola[0, :, :], axis=1)
+
 # %%
