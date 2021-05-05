@@ -4,7 +4,8 @@
 %% submission and peer review. This can be done by changing
 %% the \doucmentclass[...]{acmart} in this template to
 %% \documentclass[manuscript,screen,review]{acmart}
-
+\copyrightyear{2021}
+\acmYear{2021}
 \begin{document}
 \settopmatter{printacmref=false}
 \setcopyright{none}
@@ -32,8 +33,7 @@ Modeling Latent Patterns to Generate Symbolic Music}
 \begin{abstract}
   This report explores recent research in symbolic music modeling with
   deep learning and provides a progress report on a course project to
-  train and evaluate generative models of classical and popular music
-  on the MusicNet and Lakh MIDI datasets.
+  train and evaluate generative models of classical and popular music.
 \end{abstract}
 
 \keywords{
@@ -72,11 +72,11 @@ transcribe an audio signal as a MIDI score, which can easily be
 converted into other symbolic representations such as sheet music for
 human performers to read from, while a synthesizer model can convert
 MIDI representations into audio signals. A generative music model can
-be either trained to generate raw audio, or trained to produce a
-symbolic score that must be played by either a synthesizer or by
-humans to produce an audio music performance. This project focuses on
-generative modeling of symbolic (MIDI) music to generate original
-musical compositions.
+be trained either to generate raw audio, or to produce a symbolic
+score that must be played by a synthesizer or by humans to produce an
+audio music performance. This project focuses on the latter type of
+modeling: generative modeling of symbolic (MIDI) music to compose
+original musical scores.
 
 \section{Related Work}
 
@@ -96,9 +96,9 @@ novel hierarchical structure using a ``conductor'' recurrent layer in
 its decoder model to better capture structure at multiple levels and
 avoid the problem of ``posterior/mode collapse'' whereby a generative
 model learns to ignore its latent code and rely on autoregression
-\cite{roberts_hierarchical_2018}. This model is capable of generating
-new melodies that blend two given melodies via latent space
-interpolation.
+\cite{roberts_hierarchical_2018}. This model is trained on 16-bar
+paragraphs of music and is capable of generating new melodies that
+blend two given melodies via latent space interpolation.
 
 Another Magenta model called Music Transformer is a generative model
 that borrows its approach from the Natural Language Processing (NLP)
@@ -134,9 +134,10 @@ longer-term structural patterns.
 A major advantage of working with the symbolic representation of music
 is that it is of far lower dimensionality than the raw audio waveforms
 of a recorded performance, which makes it less computationally
-expensive. However, there are many aspects of musical performance
-style that are not captured by a symbolic representation, so the
-expressiveness of symbolic generative models is limited
+expensive. However, there are many stylistic aspects of musical
+performance that are not captured by a symbolic representation, and
+may be specific to a particular performer, so the expressiveness of
+symbolic generative models is limited in comparison
 \cite{manzelli_conditioning_2018}.
 
 Other research has focused on modeling raw audio waveforms directly. WaveNet is
@@ -176,7 +177,7 @@ Commons licensed MIDI files of popular music songs that have been
 matched and aligned to MP3 recordings, and of which I plan to use a
 subset for model training and evaluation
 \cite{raffel_learning-based_2016}. Including this second dataset may
-help us to generalize the modeling approach beyond European classical
+help to generalize the modeling approach beyond European classical
 music to include other popular genres and associated instruments.
 
 \subsection{Data Preprocessing}
@@ -196,7 +197,7 @@ levels at each timestep. To reduce dimensionality, I will clip the
 note pitch values to a narrower range, excluding the rarely used notes
 in the extreme high and low octaves, and encode chords (combinations
 of notes played simultaneously on the same instrument) as distinct
-tokens, so that
+tokens, so that they can be one-hot encoded
 
 Because songs are typically at least a few minutes long and of varying
 length, it will not be feasible to train with entire songs as
@@ -263,7 +264,7 @@ pitches and note lengths, then the Kullback-Leibler divergence and
 overlapping area of the probability density functions are used to
 compare against known reference distributions per musical genre
 \cite{yang_evaluation_2020}. Due to the cost and time requirements
-associated with designing a human subjects experiment, we plan to
+associated with designing a human subjects experiment, I plan to
 utilize this quantitative approach to the quality assessment of
 generated samples.
 
@@ -271,32 +272,41 @@ generated samples.
 
 At this stage, I have decided on MIDI generation as the modeling
 problem, downloaded several MIDI datasets, and begun exploring them to
-learn how to interpret, process, and visualize them.
+learn how to interpret, process, and visualize them. Due to the
+complexity of the MIDI format and the multiple options for
+representing it in memory, data representation has been a
+time-consuming portion of the work in this project.
 
-I have implemented several pianoroll data processing functions that
-crop sections of MIDI files into fixed-length training examples
-consisting of multi-track note sequences in symbolic time (beats) at a
-given time resolution. I have started implementing a training data
-processing pipeline that will read MIDI files from disk and transform
-them into the pianoroll-style tensor representation, providing batches
-of training examples to Keras model layers for fitting.
+So far I have implemented in Python several pianoroll data processing
+functions that crop sections of MIDI files into fixed-length training
+examples consisting of multi-track note sequences in symbolic time
+(beats) at a given time resolution. I have also started implementing a
+training data processing pipeline that will read MIDI files from disk
+and transform them into the pianoroll-style tensor representation,
+providing batches of training examples to Keras model layers for
+fitting.
 
-I have started designing a simple LSTM autoencoder to model short
+I have begun designing a simple LSTM autoencoder to model short
 (e.g. 16 beats or 4 bars) clips of monophonic (single instrument
 track) music, in order to learn the basics of sequence model
-architecture. I will create a sequence predictor model with a similar
-architecture and compare it to the autoencoder. Next I will add
+architecture and determine how complex the model must be in order to
+be capable of reconstructing music note sequences. I will create a
+sequence predictor model with a similar structure and compare its
+generative capability to that of the autoencoder. Next I will add
 support for polyphonic music with 3-5 instrument tracks. Once
 polyphonic music generation is working well, I plan to increase the
 length of the sequences and make adjustments to the model architecture
-to permit it to model longer phrases and paragraphs of music.
-
-I aim to build upon the hierarchical decoding approach taken in the
-MusicVAE \cite{roberts_hierarchical_2018} and MuseGAN
-\cite{dong2017musegan} papers, possibly adding more than two recurrent
-layers in the decoder, to address a key challenge in generative music
-modeling: the ability to learn the layered patterns in music to
-produce compositions with convincing long-term structure.
+to permit it to model longer phrases and paragraphs of music. I aim to
+improve upon the hierarchical decoding approach taken in the MusicVAE
+\cite{roberts_hierarchical_2018} and MuseGAN \cite{dong2017musegan}
+papers, possibly adding more than two recurrent layers in the decoder
+and providing even longer training examples, to address a key
+challenge in generative music modeling: the ability to learn from the
+layered patterns in music to produce compositions with convincing
+long-term structure. A stretch goal that would significantly
+differentiate my work is to produce the first model capable of
+generating not just separate phrases of symbolic music, but a coherent
+song from beginning to end.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{progress-alex}
