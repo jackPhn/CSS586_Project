@@ -315,17 +315,50 @@ def get_note_ranges_list(mts: List[pypianoroll.Multitrack]):
     return reduce(reducer, track_ranges)
 
 
-def musicnet_quartets_to_numpy() -> np.array:
+def musicnet_quartets_to_numpy(
+    bars_per_phrase: int, beats_per_bar: int = 4
+) -> np.array:
     """Get all string quartets in the MusicNet dataset as numpy arrays"""
     mts_musicnet = multitracks_musicnet_quartets()
     phrases = []
     # TODO: check for and filter out tracks that aren't in 4/4 time?
     for mt in mts_musicnet:
-        phrases.extend(split_phrases(mt, 4, 4))
+        phrases.extend(split_phrases(mt, bars_per_phrase, beats_per_bar))
     phrases_tensor = np.array([p.stack() for p in phrases]).astype(int)
     # TODO: clip the note ranges
     # reshape to (samples, timesteps, features)
     shape = phrases_tensor.shape
     phrases_tensor = phrases_tensor.reshape(shape[0], shape[2], shape[1] * shape[3])
+    # binarize
     phrases_tensor = (phrases_tensor > 0).astype(int)
     return phrases_tensor
+
+
+def numpy_to_multitrack(
+    x: np.array, programs: List[int], resolution: int = 24, tempo: float = 120.0
+):
+    """Convert numpy pianoroll back to multitrack so we can save as MIDI
+    Input shape should be (n_timesteps, n_tracks * 128)
+    Parameters
+    ----------
+    programs: List[int]
+        A list of MIDI program numbers, a string quartet is [40, 40, 41, 42]
+    """
+    n_tracks = x.shape[1] / 128
+    n_timesteps = x.shape[0]
+    np_tempo = np.repeat(tempo, n_timesteps)
+    if len(programs) != n_tracks:
+        raise Exception("x dimension 1 must be programs * 128")
+    tracks = []
+    for i, p in enumerate(programs):
+        start = 128 * i
+        end = start + 128
+        tracks.append(
+            pypianoroll.StandardTrack(
+                pianoroll=x[:, start:end], program=p
+            ).set_nonzeros(100)
+        )
+    multitrack = pypianoroll.Multitrack(
+        tracks=tracks, resolution=resolution, tempo=np_tempo
+    )
+    return multitrack
