@@ -308,6 +308,8 @@ def musicnet_quartets_to_numpy() -> np.array:
     for mt in mts_musicnet:
         phrases.extend(split_phrases(mt, 4, 4))
     phrases_tensor = np.array([p.stack() for p in phrases])
+    # TODO: clip the note ranges
+    # reshape to (samples, timesteps, features)
     shape = phrases_tensor.shape
     phrases_tensor = phrases_tensor.reshape(shape[0], shape[2], shape[1] * shape[3])
     return phrases_tensor
