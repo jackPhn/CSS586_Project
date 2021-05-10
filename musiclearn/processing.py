@@ -2,7 +2,9 @@
 Preprocessing audio data (.wav files) for analysis.
 """
 import os
-from typing import List
+import sys
+import pandas as pd
+from typing import List, Tuple
 from pathlib import Path
 from tensorflow import keras
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -98,8 +100,14 @@ class MIDIDataGenerator(keras.utils.Sequence):
 
 def midi_to_multitrack(path: os.PathLike, resolution: int) -> pypianoroll.Multitrack:
     """"""
-    assert os.path.isfile(path)
-    mt = pypianoroll.read(str(path))
+    if os.path.isdir(path):
+        raise IsADirectoryError(f"{path} is a directory, expected a file.")
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f"{path} is not a file.")
+    try:
+        mt = pypianoroll.read(str(path))
+    except:
+        return None
     return mt
 
 
@@ -194,3 +202,112 @@ def test_pianoroll_to_numpy():
     first_four_bars = get_phrase(mt, 0, 4, 4)
     np_four_bars = pianoroll_to_numpy(first_four_bars)
     assert np_four_bars.shape == (4, 384, 128)
+
+
+def list_instruments(path: os.PathLike) -> List[Tuple[str, int, bool]]:
+    """List the instrument tracks in a MIDI file"""
+    mt = midi_to_multitrack(path, 24)
+    if mt is None:
+        return []
+    return [(track.name, track.program, track.is_drum) for track in mt.tracks]
+
+
+def list_dir_instruments(path: os.PathLike) -> pd.DataFrame:
+    """List the instrument tracks in a directory of MIDI files"""
+    if not os.path.isdir(path):
+        raise NotADirectoryError(f"{path} is not a directory.")
+    path = Path(path)
+    mid_files = list(path.glob("*.mid"))
+    tracks = []
+    for f in mid_files:
+        instruments = list_instruments(f)
+        tracks.extend([(str(f), *i) for i in instruments])
+    return pd.DataFrame(tracks, columns=["path", "instrument", "program_id", "is_drum"])
+
+
+def list_musicnet_instruments(path: os.PathLike) -> pd.DataFrame:
+    """Report the instrument tracks present in a directory of MIDIs as a DataFrame."""
+    if not os.path.isdir(path):
+        raise NotADirectoryError(f"{path} is not a directory.")
+    path = Path(path)
+    return pd.concat([list_dir_instruments(d) for d in path.glob("*")])
+
+
+def multitracks_by_instruments(
+    path: os.PathLike,
+    program_ids: List[int],
+    resolution: int = 24,
+    binarize: bool = True,
+) -> Tuple[List[pypianoroll.Multitrack], List[str]]:
+    """Get a list of multitracks with the specified program IDs (instrument #s) from a directory"""
+    if not os.path.isdir(path):
+        raise NotADirectoryError(f"{path} is not a directory.")
+    path = Path(path)
+    multitracks = []
+    fnames = []
+    mid_files = list(path.glob("*.mid"))
+    for f in mid_files:
+        try:
+            current_mt = pypianoroll.read(f, resolution=resolution)
+            if binarize:
+                current_mt = current_mt.binarize()
+            if current_mt:
+                # sort the MIDI tracks by program # and check if exactly equal to the list
+                current_mt.tracks = sorted(current_mt.tracks, key=lambda x: x.program)
+                current_programs = [t.program for t in current_mt.tracks]
+                if current_programs == sorted(program_ids):
+                    multitracks.append(current_mt)
+                    fnames.append(str(f))
+        except:  # probably a corrupt MIDI file
+            print(f"Failed to read {f}", file=sys.stderr)
+    return multitracks, fnames
+
+
+def multitracks_by_instruments_musicnet(
+    path: os.PathLike, program_ids: List[int]
+) -> Tuple[List[pypianoroll.Multitrack], List[str]]:
+    """Get a list of musicnet multitracks with the specified program IDs"""
+    if not os.path.isdir(path):
+        raise NotADirectoryError(f"{path} is not a directory.")
+    path = Path(path)
+    composers = os.listdir(path)
+    multitracks = []
+    fnames = []
+    for composer in composers:
+        composer_tracks, composer_files = multitracks_by_instruments(
+            path / composer, program_ids
+        )
+        if len(composer_tracks) > 0:
+            multitracks.extend(composer_tracks)
+            fnames.extend(composer_files)
+    return multitracks, fnames
+
+
+def multitracks_musicnet_quartets() -> List[pypianoroll.Multitrack]:
+    """Get a pypianoroll multitrack for each string quartet in the MusicNet dataset."""
+    path = Path(config.MUSICNET_MIDI_DIR)
+    string_quartet = [40, 40, 41, 42]
+    tracks, _ = multitracks_by_instruments_musicnet(path, string_quartet)
+    return tracks
+
+
+def get_note_ranges(multitrack: pypianoroll.Multitrack):
+    """Get the lowest and highest note value per pianoroll track"""
+    # Use this later to clip the track note ranges
+    track_ranges = pypianoroll.pitch_range_tuple(
+        track.pianoroll for track in multitrack.tracks
+    )
+    return track_ranges
+
+
+def musicnet_quartets_to_numpy() -> np.array:
+    """Get all string quartets in the MusicNet dataset as numpy arrays"""
+    mts_musicnet = multitracks_musicnet_quartets()
+    phrases = []
+    # TODO: check for and filter out tracks that aren't in 4/4 time?
+    for mt in mts_musicnet:
+        phrases.extend(split_phrases(mt, 4, 4))
+    phrases_tensor = np.array([p.stack() for p in phrases])
+    shape = phrases_tensor.shape
+    phrases_tensor = phrases_tensor.reshape(shape[0], shape[2], shape[1] * shape[3])
+    return phrases_tensor
