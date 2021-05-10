@@ -3,6 +3,7 @@ Preprocessing audio data (.wav files) for analysis.
 """
 import os
 import sys
+from functools import reduce
 import pandas as pd
 from typing import List, Tuple
 from pathlib import Path
@@ -169,6 +170,10 @@ def split_phrases(
     multitrack: pypianoroll.Multitrack, bars_per_phrase: int, beats_per_bar: int
 ):
     """get an array of equal length multitrack phrases from a single multitrack"""
+    # pad partial phrases with zeroes
+    multitrack = multitrack.pad_to_multiple(
+        bars_per_phrase * beats_per_bar * multitrack.resolution
+    )
     total_bars = num_beats(multitrack) // beats_per_bar
     num_phrases = total_bars // bars_per_phrase
     phrases = [
@@ -184,8 +189,8 @@ def test_split_phrases():
     mt = midi_to_multitrack(mid_file, 24)
     first_16_bars = get_phrase(mt, 0, 16, 4)
     four_phrases = split_phrases(first_16_bars, 4, 4)
-    shapes = [m.tracks[0].pianoroll.shape for m in four_phrases]
     assert len(four_phrases) == 4
+    # shapes = [m.tracks[0].pianoroll.shape for m in four_phrases]
     # assert shapes == [(384, 128), (384, 128), (384, 128), (384, 128)]
 
 
@@ -237,7 +242,6 @@ def multitracks_by_instruments(
     path: os.PathLike,
     program_ids: List[int],
     resolution: int = 24,
-    binarize: bool = True,
 ) -> Tuple[List[pypianoroll.Multitrack], List[str]]:
     """Get a list of multitracks with the specified program IDs (instrument #s) from a directory"""
     if not os.path.isdir(path):
@@ -249,8 +253,6 @@ def multitracks_by_instruments(
     for f in mid_files:
         try:
             current_mt = pypianoroll.read(f, resolution=resolution)
-            if binarize:
-                current_mt = current_mt.binarize()
             if current_mt:
                 # sort the MIDI tracks by program # and check if exactly equal to the list
                 current_mt.tracks = sorted(current_mt.tracks, key=lambda x: x.program)
@@ -294,10 +296,23 @@ def multitracks_musicnet_quartets() -> List[pypianoroll.Multitrack]:
 def get_note_ranges(multitrack: pypianoroll.Multitrack):
     """Get the lowest and highest note value per pianoroll track"""
     # Use this later to clip the track note ranges
-    track_ranges = pypianoroll.pitch_range_tuple(
-        track.pianoroll for track in multitrack.tracks
-    )
+    track_ranges = [
+        pypianoroll.pitch_range_tuple(track.pianoroll) for track in multitrack.tracks
+    ]
     return track_ranges
+
+
+def get_note_ranges_list(mts: List[pypianoroll.Multitrack]):
+    """Get note ranges for a list of multitracks"""
+    track_ranges = [get_note_ranges(mt) for mt in mts]
+
+    def reducer(l: List[Tuple[int, int]], r: List[Tuple[int, int]]):
+        return [
+            (int(np.nanmin([l[i][0], r[i][0]])), int(np.nanmax([l[i][1], r[i][1]])))
+            for i in range(len(l))
+        ]
+
+    return reduce(reducer, track_ranges)
 
 
 def musicnet_quartets_to_numpy() -> np.array:
@@ -307,9 +322,10 @@ def musicnet_quartets_to_numpy() -> np.array:
     # TODO: check for and filter out tracks that aren't in 4/4 time?
     for mt in mts_musicnet:
         phrases.extend(split_phrases(mt, 4, 4))
-    phrases_tensor = np.array([p.stack() for p in phrases])
+    phrases_tensor = np.array([p.stack() for p in phrases]).astype(int)
     # TODO: clip the note ranges
     # reshape to (samples, timesteps, features)
     shape = phrases_tensor.shape
     phrases_tensor = phrases_tensor.reshape(shape[0], shape[2], shape[1] * shape[3])
+    phrases_tensor = (phrases_tensor > 0).astype(int)
     return phrases_tensor
