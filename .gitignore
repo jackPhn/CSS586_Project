@@ -443,3 +443,4 @@ cython_debug/
 # Pipenv lock file
 Pipfile.lock
 .vscode/
+/notebooks/quartets.npy

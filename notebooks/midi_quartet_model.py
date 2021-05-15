@@ -7,6 +7,10 @@
 # An exploratory notebook for playing with model architecture ideas.
 
 # %%
+%load_ext autoreload
+%autoreload 2
+
+# %%
 import pathlib
 import os
 import sys
