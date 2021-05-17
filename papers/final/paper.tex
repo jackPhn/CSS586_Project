@@ -165,7 +165,7 @@ which is a collection of 330 freely licensed European classical music
 recordings with aligned MIDI scores \cite{thickstun2017learning}, and
 the Lakh MIDI Dataset, which includes a collection of 45,129 Creative
 Commons licensed MIDI files of popular music songs that have been
-matched and aligned to MP3 recordings, and of which I plan to use a
+matched and aligned to MP3 recordings, and of which we plan to use a
 subset for model training and evaluation
 \cite{raffel_learning-based_2016}. Including this second dataset may
 help to generalize the modeling approach beyond European classical
@@ -182,8 +182,8 @@ objects, such as pretty\_midi \cite{raffel_pretty_midi_2014},
 Pypianoroll \cite{dong_pypianoroll_2018} and music21
 \cite{cuthbert_music21_2010}.
 
-In order to accommodate polyphonic music, I will convert each MIDI
-file into a pianoroll representation, as visualized in Figure
+In order to accommodate polyphonic music, we convert each MIDI file
+into a pianoroll representation, as visualized in Figure
 \ref{pianoroll}, wherein each instrument track is a sparse matrix that
 multi-hot encodes the velocity values for each of 128 possible pitch
 levels at each timestep. To reduce dimensionality, I will clip the

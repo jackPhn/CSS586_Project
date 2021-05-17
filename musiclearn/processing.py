@@ -13,6 +13,7 @@ from scipy.io import wavfile
 import numpy as np
 import pypianoroll
 from musiclearn import config
+from music21 import converter, instrument, note, stream, chord
 
 
 class WavDataGenerator(keras.utils.Sequence):
@@ -241,7 +242,7 @@ def list_musicnet_instruments(path: os.PathLike) -> pd.DataFrame:
 def multitracks_by_instruments(
     path: os.PathLike,
     program_ids: List[int],
-    resolution: int = 24,
+    resolution: int,
 ) -> Tuple[List[pypianoroll.Multitrack], List[str]]:
     """Get a list of multitracks with the specified program IDs (instrument #s) from a directory"""
     if not os.path.isdir(path):
@@ -266,7 +267,7 @@ def multitracks_by_instruments(
 
 
 def multitracks_by_instruments_musicnet(
-    path: os.PathLike, program_ids: List[int]
+    path: os.PathLike, program_ids: List[int], resolution: int
 ) -> Tuple[List[pypianoroll.Multitrack], List[str]]:
     """Get a list of musicnet multitracks with the specified program IDs"""
     if not os.path.isdir(path):
@@ -277,7 +278,7 @@ def multitracks_by_instruments_musicnet(
     fnames = []
     for composer in composers:
         composer_tracks, composer_files = multitracks_by_instruments(
-            path / composer, program_ids
+            path / composer, program_ids, resolution
         )
         if len(composer_tracks) > 0:
             multitracks.extend(composer_tracks)
@@ -285,11 +286,19 @@ def multitracks_by_instruments_musicnet(
     return multitracks, fnames
 
 
-def multitracks_musicnet_quartets() -> List[pypianoroll.Multitrack]:
+def multitracks_musicnet_quartets(resolution: int = 12) -> List[pypianoroll.Multitrack]:
     """Get a pypianoroll multitrack for each string quartet in the MusicNet dataset."""
     path = Path(config.MUSICNET_MIDI_DIR)
     string_quartet = [40, 40, 41, 42]
-    tracks, _ = multitracks_by_instruments_musicnet(path, string_quartet)
+    tracks, _ = multitracks_by_instruments_musicnet(path, string_quartet, resolution)
+    return tracks
+
+
+def multitracks_musicnet_quartets(resolution: int = 12) -> List[pypianoroll.Multitrack]:
+    """Get a pypianoroll multitrack for each string quartet in the MusicNet dataset."""
+    path = Path(config.MUSICNET_MIDI_DIR)
+    piano = [1]
+    tracks, _ = multitracks_by_instruments_musicnet(path, piano, resolution)
     return tracks
 
 
@@ -316,26 +325,32 @@ def get_note_ranges_list(mts: List[pypianoroll.Multitrack]):
 
 
 def musicnet_quartets_to_numpy(
-    bars_per_phrase: int, beats_per_bar: int = 4
+    bars_per_phrase: int,
+    beats_per_bar: int,
+    resolution: int,
 ) -> np.array:
     """Get all string quartets in the MusicNet dataset as numpy arrays"""
-    mts_musicnet = multitracks_musicnet_quartets()
+    mts_musicnet = multitracks_musicnet_quartets(resolution)
     phrases = []
     # TODO: check for and filter out tracks that aren't in 4/4 time?
     for mt in mts_musicnet:
         phrases.extend(split_phrases(mt, bars_per_phrase, beats_per_bar))
-    phrases_tensor = np.array([p.stack() for p in phrases]).astype(int)
-    # TODO: clip the note ranges
+    phrases = np.array([p.stack() for p in phrases]).astype(int)
+    shape = phrases.shape
     # reshape to (samples, timesteps, features)
-    shape = phrases_tensor.shape
-    phrases_tensor = phrases_tensor.reshape(shape[0], shape[2], shape[1] * shape[3])
-    # binarize
-    phrases_tensor = (phrases_tensor > 0).astype(int)
-    return phrases_tensor
+    phrases = (phrases > 0).argmax(axis=3).reshape(shape[0], shape[2], shape[1])
+    return phrases
+
+
+def musicnet_piano_to_numpy(
+    bars_per_phrase: int, beats_per_bar: int, resolution: int
+) -> np.array:
+    """Get all piano pieces in the MusicNet dataset as numpy arrays"""
+    # TODO
 
 
 def numpy_to_multitrack(
-    x: np.array, programs: List[int], resolution: int = 24, tempo: float = 120.0
+    x: np.array, programs: List[int], resolution: int, tempo: float = 120.0
 ):
     """Convert numpy pianoroll back to multitrack so we can save as MIDI
     Input shape should be (n_timesteps, n_tracks * 128)
@@ -362,3 +377,117 @@ def numpy_to_multitrack(
         tracks=tracks, resolution=resolution, tempo=np_tempo
     )
     return multitrack
+
+
+def musicnet_quartets_to_music21(program_ids=[40, 40, 41, 42]):
+    """Get musicnet string quartets in music21 score format"""
+    path = Path(config.MUSICNET_MIDI_DIR)
+
+    if not os.path.isdir(path):
+        raise NotADirectoryError(f"{path} is not a directory.")
+    composers = os.listdir(path)
+    scores = []
+    fnames = []
+    for composer in composers:
+        mid_files = list((path / composer).glob("*.mid"))
+        for f in mid_files:
+            try:
+                score = converter.parse(f)
+                if score:
+                    # sort the MIDI tracks by program # and check if exactly equal to the list
+                    programs = sorted(
+                        [p.getInstrument().midiProgram for p in score.parts]
+                    )
+                    if programs == sorted(program_ids):
+                        scores.append(score)
+                        fnames.append(str(f))
+            except:  # probably a corrupt MIDI file
+                print(f"Failed to read {f}", file=sys.stderr)
+    return scores, fnames
+
+
+def len_score(score: stream.Score, resolution: int = 12) -> int:
+    """Get the length of a score in ticks.
+    Parameters
+    ----------
+    score: music21.stream.Score
+    resolution: int
+        The number of time steps per beat
+    """
+    return int(score.flat.highestTime) * resolution
+
+
+def score_to_df(score: stream.Score, resolution: int = 12) -> pd.DataFrame:
+    """Convert a Music21 score to a pandas dataframe"""
+    parts = []
+
+    for track, part in enumerate(score.parts):
+        instr = part.getInstrument().midiProgram
+        for item in part.flat:
+            if isinstance(item, note.Note):
+                parts.append(
+                    (
+                        track,
+                        instr,
+                        item.offset * resolution,
+                        item.quarterLength * resolution,
+                        item.pitch.midi,
+                    )
+                )
+            elif isinstance(item, chord.Chord):
+                parts.append(
+                    (
+                        track,
+                        instr,
+                        item.offset * resolution,
+                        item.quarterLength * resolution,
+                        item.sortAscending().pitches[0].midi,
+                    )
+                )
+    df = (
+        pd.DataFrame(
+            parts,
+            columns=["track", "instrument", "position", "duration", "pitch"],
+            dtype=int,
+        )
+        .groupby(["track", "instrument", "position"])[["duration", "pitch"]]
+        .min()
+        .reset_index()
+    )
+
+    return df
+
+
+REST = 128
+SUSTAIN = 129
+
+
+def score_to_array(score: stream.Score, resolution: int = 12) -> np.array:
+    """Convert score DataFrame to a numpy array"""
+    total_length = len_score(score) + 1
+    arr = np.full((total_length, len(score.parts)), REST, dtype=int)
+    for track, part in enumerate(score.parts):
+        for item in part.flat:
+            if isinstance(item, chord.Chord) or isinstance(item, note.Note):
+                position = int(item.offset) * resolution
+                duration = int(item.quarterLength * resolution)
+                pitch = (
+                    item.pitch.midi
+                    if isinstance(item, note.Note)
+                    else item.sortAscending().pitches[0].midi
+                )
+                arr[position, track] = pitch
+                for i in range(position + 1, position + duration):
+                    arr[i, track] = SUSTAIN
+
+    return arr
+
+
+def split_array(arr: np.array, beats_per_phrase: int, resolution: int = 12) -> np.array:
+    """Split a song array into phrases"""
+    phrase_len = beats_per_phrase * resolution
+    n_phrases = int(np.ceil(len(arr) / phrase_len))
+    padding = (-len(arr)) % n_phrases
+    filling = np.full((padding, arr.shape[1]), fill_value=REST, dtype=int)
+    arr_split = np.array(np.split(np.concatenate((arr, filling)), n_phrases))
+    return arr_split
