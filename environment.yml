@@ -12,12 +12,10 @@ dependencies:
   - black
   - pylint
   - jupyter
+  - python-dotenv
+  - pytest
   - music21
-  - click
-  - pydot
   - pip
-  - pip:
-      - note-seq
-      - pypianoroll
-      - pretty-midi
-      - miditoolkit
+  - readline
+  - pydot
+prefix: /home/alex/miniconda3/envs/musiclearn

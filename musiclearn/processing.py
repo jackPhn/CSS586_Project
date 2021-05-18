@@ -10,7 +10,7 @@ from typing import List, Tuple
 import numpy as np
 import pandas as pd
 import pypianoroll
-from music21 import chord, converter, note, stream
+from music21 import chord, converter, instrument, note, stream
 from tensorflow import keras
 
 from musiclearn import config
@@ -394,6 +394,16 @@ REST_STR = "REST"
 SUSTAIN_STR = "SUST"
 
 
+def chord_to_str(ch: chord.Chord) -> str:
+    """Convert a chord to string representation"""
+    return (".").join([p.nameWithOctave for p in ch.sortAscending().pitches])
+
+
+def str_to_chord(string: str) -> chord.Chord:
+    pitches = string.split(".")
+    return chord.Chord(pitches)
+
+
 def score_to_str_array(score: stream.Score, resolution: int = 12) -> np.array:
     """Convert score to a numpy array of strings"""
     total_length = len_score(score) + 1
@@ -404,14 +414,50 @@ def score_to_str_array(score: stream.Score, resolution: int = 12) -> np.array:
                 position = int(item.offset * resolution)
                 duration = int(item.quarterLength * resolution)
                 pitch = (
-                    item.pitch.nameWithOctave
-                    if isinstance(item, note.Note)
-                    else (".").join([p.nameWithOctave for p in item.sortAscending().pitches])
+                    item.pitch.nameWithOctave if isinstance(item, note.Note) else chord_to_str(item)
                 )
                 arr[position, track] = pitch
                 for i in range(position + 1, position + duration):
                     arr[i, track] = SUSTAIN_STR
     return arr
+
+
+def str_array_to_score(
+    arr: np.array, programs: List[int] = None, resolution: int = 12
+) -> stream.Score:
+    """Convert str array back into a score so we can output MIDI.
+    Parameters
+    ----------
+    arr: np.array
+        A numpy array of shape (n_timesteps, n_parts)
+    programs: List[int]
+        A list of MIDI program numbers (instrument codes), one per part
+    resolution: int
+        The number of time steps per quarter note (beat)
+    """
+    score = stream.Score()
+    num_parts = arr.shape[1]
+    df = pd.DataFrame(arr)
+    df["offset"] = df.index / resolution
+    for p in range(num_parts):
+        part = stream.Part()
+        mid_program = programs[p] if programs else 0
+        inst = instrument.instrumentFromMidiProgram(mid_program)
+        part.insert(0, inst)
+        dfp = df[[p, "offset"]]
+        dfp = dfp[dfp[p] != SUSTAIN_STR]
+        dfp["duration"] = -dfp["offset"].diff(-1)
+        dfp["duration"] = dfp["duration"].fillna(0)
+        for i, row in dfp.iterrows():
+            if row[p] == REST_STR:  # rest
+                part.append(note.Rest(quarterLength=row["duration"]))
+            elif "." in row[p]:  # chord
+                part.append(chord.Chord(str_to_chord(row[p]), quarterLength=row["duration"]))
+            else:  # note
+                part.append(note.Note(row[p], quarterLength=row["duration"]))
+
+        score.insert(0, part)
+    return score
 
 
 def split_array(
