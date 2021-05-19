@@ -288,8 +288,10 @@ def numpy_to_multitrack(x: np.array, programs: List[int], resolution: int, tempo
     return multitrack
 
 
-def musicnet_quartets_to_music21(program_ids=[40, 40, 41, 42]):
+def musicnet_quartets_to_music21(program_ids=None):
     """Get musicnet string quartets in music21 score format"""
+    if program_ids is None:
+        program_ids = [40, 40, 41, 42]
     path = Path(config.MUSICNET_MIDI_DIR)
 
     if not os.path.isdir(path):
@@ -300,12 +302,14 @@ def musicnet_quartets_to_music21(program_ids=[40, 40, 41, 42]):
     for composer in composers:
         mid_files = list((path / composer).glob("*.mid"))
         for f in mid_files:
+            print(f"Reading {f}...")
             try:
                 score = converter.parse(f)
                 if score:
                     # sort the MIDI tracks by program # and check if exactly equal to the list
                     programs = sorted([p.getInstrument().midiProgram for p in score.parts])
                     if programs == sorted(program_ids):
+                        print(f"{f} is a match.")
                         scores.append(score)
                         fnames.append(str(f))
             except:  # probably a corrupt MIDI file
@@ -321,7 +325,7 @@ def len_score(score: stream.Score, resolution: int = 12) -> int:
     resolution: int
         The number of time steps per beat
     """
-    return int(score.flat.highestTime) * resolution
+    return int(score.flat.highestTime * resolution)
 
 
 def score_to_df(score: stream.Score, resolution: int = 12) -> pd.DataFrame:
@@ -407,7 +411,7 @@ def str_to_chord(string: str) -> chord.Chord:
 def score_to_str_array(score: stream.Score, resolution: int = 12) -> np.array:
     """Convert score to a numpy array of strings"""
     total_length = len_score(score) + 1
-    arr = np.full((total_length, len(score.parts)), REST_STR, dtype=object)
+    arr = np.full((total_length, len(score.parts)), REST_STR, dtype="object")
     for track, part in enumerate(score.parts):
         for item in part.flat.notes:
             if isinstance(item, chord.Chord) or isinstance(item, note.Note):

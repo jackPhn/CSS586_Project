@@ -3,16 +3,20 @@
 #
 # An exploratory notebook for playing with model architecture ideas.
 # %%
+%load_ext autoreload
+%autoreload 2
+
+# %%
 import pathlib
 import sys
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pypianoroll
-import matplotlib.pyplot as plt
-from tensorflow.keras import utils, layers, Model, optimizers, Sequential
+from tensorflow.keras import Model, Sequential, layers, optimizers, utils
 
 sys.path.append("..")
 from musiclearn import config
-
 
 # %%
 # Picking one song from MusicNet dataset
