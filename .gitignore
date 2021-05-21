@@ -445,3 +445,4 @@ Pipfile.lock
 .vscode/
 /notebooks/quartets.npy
 /notebooks/*.npy
+/notebooks/*.joblib
