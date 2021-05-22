@@ -18,9 +18,11 @@ import sys
 
 import joblib
 import numpy as np
+import tensorflow as tf
 from sklearn.preprocessing import OrdinalEncoder
-from tensorflow.keras import (Model, Sequential, layers, metrics, optimizers,
-                              utils)
+from tensorflow.keras import Model, Sequential
+from tensorflow.keras import backend as K
+from tensorflow.keras import layers, losses, metrics, optimizers, utils
 
 sys.path.append("..")
 from musiclearn import processing
@@ -64,7 +66,7 @@ shape = (n_timesteps, n_features)
 # First, one track autoencoder
 
 # %%
-model = vae.OneTrackVAE(
+model = vae.OneTrackAE(
     optimizer=optimizers.Adam(learning_rate=0.001),
     n_timesteps=n_timesteps,
     n_notes=n_notes,
@@ -84,18 +86,16 @@ history = model.train(x_0, x_0, batch_size=32, epochs=100, val_split=0.2)
 history.model.save("violin_lstm_model")
 np.savez(history.history, "violin_lstm_history.npz")
 
+# %% [markdown]
+# Variational AE (one track)
 
 # %%
-model = vae.MultiTrackVAE(
-    optimizer=optimizers.Adam(learning_rate=0.001),
-    n_timesteps=n_timesteps,
-    n_features=n_features,
-    n_notes=n_notes,
-    embedding_dim=4,
-)
-utils.plot_model(model.model, show_shapes=True)
+latent_dim = 8
+opt = optimizers.Adam(learning_rate=0.0001)
+encoder = vae.one_track_encoder(latent_dim, n_timesteps, n_notes)
+decoder = vae.one_track_decoder(latent_dim, n_timesteps, n_notes)
+lstm_vae = vae.VAE(encoder, decoder)
+lstm_vae.compile(optimizer=opt)
+history = lstm_vae.fit(x_0, batch_size=32, epochs=100, validation_split=0.1)
 
-# %%
-history = model.train(x, batch_size=32, epochs=100, val_split=0.2)
-history.model.save("quartet_lstm_model")
-np.savez(history.history, "quartet_lstm_history.npz")
+# TODO: implement VAE for multi-track
