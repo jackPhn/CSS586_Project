@@ -105,4 +105,9 @@ opt = optimizers.Adam(learning_rate=0.0002)
 lstm_vae, encoder, decoder = vae.build_one_track_vae(opt, latent_dim, n_timesteps, n_notes)
 history = lstm_vae.fit(x_0, x_0, batch_size=64, epochs=100, validation_split=0.1)
 
-# TODO: implement VAE for multi-track
+# %% [markdown]
+#
+# - [] TODO: try one-hot encoding instead?
+# - [] TODO: Try higher dimension embedding?
+# - [] TODO: Try Higher latent dimension
+# - [] TODO: Implement VAE for multi-track
