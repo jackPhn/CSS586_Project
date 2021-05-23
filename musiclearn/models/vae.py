@@ -3,26 +3,15 @@ Music Variational Autoencoders
 """
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras import backend as K
 from tensorflow.keras import layers
-
-
-class Model:
-    def __init__(self, *args):
-        self.model = self._build(*args)
-
-    def train(self, x, y, batch_size, epochs, val_split=0.2):
-        """Fit the model to data"""
-        history = self.model.fit(
-            x, y, batch_size=batch_size, epochs=epochs, validation_split=val_split
-        )
-        return history
 
 
 def sample_normal(inputs):
     mu, sigma = inputs
-    batch = keras.backend.shape(mu)[0]
-    dim = keras.backend.int_shape(mu)[1]
-    epsilon = tf.keras.backend.random_normal(shape=(batch, dim))
+    batch = K.shape(mu)[0]
+    dim = K.int_shape(mu)[1]
+    epsilon = K.random_normal(shape=(batch, dim))
     sample = mu + tf.exp(0.5 * sigma) * epsilon
     return sample
 
@@ -36,11 +25,9 @@ class Sampling(layers.Layer):
 
 def loss(y_true, y_pred, beta=1.0):
     """VAE multi-objective cross entropy / KL divergence loss function"""
-    reconst_loss = keras.backend.sum(
-        keras.losses.sparse_categorical_crossentropy(y_true, y_pred), axis=1
-    )
-    diverge_loss = keras.backend.sum(keras.losses.kl_divergence(y_true, y_pred), axis=-1)
-    return keras.backend.mean(reconst_loss + beta * diverge_loss)
+    reconst_loss = K.sum(keras.losses.sparse_categorical_crossentropy(y_true, y_pred), axis=1)
+    diverge_loss = K.sum(keras.losses.kl_divergence(y_true, y_pred), axis=-1)
+    return K.mean(reconst_loss + beta * diverge_loss)
 
 
 class VAE(keras.Model):
@@ -62,7 +49,7 @@ class VAE(keras.Model):
 
     def train_step(self, data):
         """"""
-        # based on https://keras.io/examples/generative/vae/#define-the-vae-as-a-model-with-a-custom-trainstep
+        # https://keras.io/examples/generative/vae/#define-the-vae-as-a-model-with-a-custom-trainstep
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z = self.encoder(data)
             reconstruction = self.decoder(z)
@@ -85,6 +72,28 @@ class VAE(keras.Model):
             "kl_loss": self.kl_loss_tracker.result(),
         }
 
+    def test_step(self, data):
+        """Validation"""
+        print("test_step called!")
+        z_mean, z_log_var, z = self.encoder(data, training=False)
+        reconstruction = self.decoder(z, training=False)
+        reconstruction_loss = tf.reduce_mean(
+            tf.reduce_sum(
+                keras.losses.sparse_categorical_crossentropy(data, reconstruction), axis=1
+            )
+        )
+        kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
+        kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
+        total_loss = reconstruction_loss + kl_loss
+        self.total_loss_tracker.update_state(total_loss)
+        self.reconstruction_loss_tracker.update_state(reconstruction_loss)
+        self.kl_loss_tracker.update_state(kl_loss)
+        return {
+            "val_loss": self.total_loss_tracker.result(),
+            "val_reconstruction_loss": self.reconstruction_loss_tracker.result(),
+            "val_kl_loss": self.kl_loss_tracker.result(),
+        }
+
     def call(self, inputs, training=None, mask=None):
         _, _, z = self.encoder(inputs, training=training, mask=mask)
         return self.decoder(z)
@@ -92,32 +101,83 @@ class VAE(keras.Model):
 
 def one_track_encoder(latent_dim, n_timesteps, n_notes, training=False):
     inputs = layers.Input(shape=(n_timesteps, 1))
-    x = layers.Embedding(n_notes, 8, input_length=n_timesteps)(inputs)
-    x = layers.Reshape((n_timesteps, 8))(x)
-    x = layers.LSTM(128, return_sequences=True)(inputs)
-    x = layers.Dropout(0.2)(x, training=training)
-    x = layers.LSTM(128, return_sequences=False)(x)
-    mu = layers.Dense(latent_dim, name="mu")(x)
-    sigma = layers.Dense(latent_dim, name="sigma")(x)
+    encoder = layers.Embedding(n_notes, 8, input_length=n_timesteps)(inputs)
+    encoder = layers.Reshape((n_timesteps, 8))(encoder)
+    encoder = layers.LSTM(128, return_sequences=True)(inputs)
+    encoder = layers.Dropout(0.2)(encoder, training=training)
+    encoder = layers.LSTM(128, return_sequences=False)(encoder)
+    mu = layers.Dense(latent_dim, name="mu")(encoder)
+    sigma = layers.Dense(latent_dim, name="sigma")(encoder)
     z = Sampling()([mu, sigma])
-    encoder = keras.Model(inputs, [mu, sigma, z], name="encoder")
+    model = keras.Model(inputs, [mu, sigma, z], name="encoder")
 
-    return encoder
+    return model
 
 
 def one_track_decoder(latent_dim, n_timesteps, n_notes, training=False):
     inputs = layers.Input(shape=(latent_dim,))
-    x = layers.RepeatVector(n_timesteps)(inputs)
-    x = layers.LSTM(128, return_sequences=True)(x)
-    x = layers.Dropout(0.2)(x, training=training)
-    x = layers.LSTM(128, return_sequences=True)(x)
-    outputs = layers.TimeDistributed(layers.Dense(n_notes, activation="softmax"))(x)
-    decoder = keras.Model(inputs, outputs, name="decoder")
+    decoder = layers.RepeatVector(n_timesteps)(inputs)
+    decoder = layers.LSTM(128, return_sequences=True)(decoder)
+    decoder = layers.Dropout(0.2)(decoder, training=training)
+    decoder = layers.LSTM(128, return_sequences=True)(decoder)
+    outputs = layers.TimeDistributed(layers.Dense(n_notes, activation="softmax"))(decoder)
+    model = keras.Model(inputs, outputs, name="decoder")
 
-    return decoder
+    return model
 
 
-class OneTrackAE(Model):
+def build_one_track_vae(optimizer, latent_dim, n_timesteps, n_notes, dropout_rate=0.2):
+    """Build the one-track LSTM-VAE"""
+    # define encoder model
+    inputs = layers.Input(shape=(n_timesteps, 1))
+    encoder = layers.Embedding(n_notes, 8, input_length=n_timesteps)(inputs)
+    encoder = layers.Reshape((n_timesteps, 8))(encoder)
+    encoder = layers.LSTM(256, return_sequences=True)(encoder)
+    encoder = layers.Dropout(dropout_rate)(encoder)
+    encoder = layers.LSTM(256, return_sequences=False)(encoder)
+    mu = layers.Dense(latent_dim, name="mu")(encoder)
+    sigma = layers.Dense(latent_dim, name="sigma")(encoder)
+
+    z = layers.Lambda(sample_normal, output_shape=(latent_dim,))([mu, sigma])
+    encoder_model = keras.Model(inputs, [mu, sigma, z])
+
+    # define decoder model
+    decoder_input = layers.Input(shape=(latent_dim,))
+    decoder = layers.RepeatVector(n_timesteps)(decoder_input)
+    decoder = layers.LSTM(256, return_sequences=True)(decoder)
+    decoder = layers.Dropout(dropout_rate)(decoder)
+    decoder = layers.LSTM(256, return_sequences=True)(decoder)
+    outputs = layers.TimeDistributed(layers.Dense(n_notes, activation="softmax"))(decoder)
+    decoder_model = keras.Model(decoder_input, outputs)
+
+    # connect encoder and decoder together
+    decoder_outputs = decoder_model(z)
+    vae_model = keras.Model(inputs=inputs, outputs=decoder_outputs)
+
+    # def vae_loss(y_true, y_pred, beta=1.0):
+    #     with tf.GradientTape():
+    #         reconstruction_loss = tf.reduce_mean(
+    #             tf.reduce_sum(
+    #                 keras.losses.sparse_categorical_crossentropy(y_true, y_pred), axis=(1, 2)
+    #             )
+    #         )
+    #         kl_loss = -0.5 * (1 + sigma - tf.square(mu) - tf.exp(sigma))
+    #         kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
+    #         total_loss = reconstruction_loss + kl_loss
+    #         return total_loss
+
+    kl_loss = -0.5 * tf.reduce_mean(sigma - tf.square(mu) - tf.exp(sigma) + 1)
+    vae_model.add_loss(kl_loss)
+    vae_model.compile(
+        optimizer=optimizer,
+        loss="sparse_categorical_crossentropy",
+        metrics=["sparse_categorical_accuracy"],
+    )
+
+    return vae_model, encoder_model, decoder_model
+
+
+class OneTrackAE:
     def __init__(self, optimizer, n_timesteps, n_notes):
         self.model = self._build(optimizer, n_timesteps, n_notes)
 
@@ -134,7 +194,7 @@ class OneTrackAE(Model):
         decoder = layers.Dropout(0.2)(decoder)
         decoder = layers.LSTM(128, return_sequences=True)(decoder)
         decoder = layers.TimeDistributed(layers.Dense(n_notes, activation="softmax"))(decoder)
-        model = Model(inputs=inputs, outputs=decoder)
+        model = keras.Model(inputs=inputs, outputs=decoder)
         model.compile(
             optimizer=optimizer,
             loss="sparse_categorical_crossentropy",
@@ -142,8 +202,15 @@ class OneTrackAE(Model):
         )
         return model
 
+    def train(self, x, y, batch_size, epochs, val_split=0.2):
+        """Fit the model to data"""
+        history = self.model.fit(
+            x, y, batch_size=batch_size, epochs=epochs, validation_split=val_split
+        )
+        return history
 
-class MultiTrackVAE(Model):
+
+class MultiTrackVAE:
     """"""
 
     # TODO
@@ -158,10 +225,17 @@ class MultiTrackVAE(Model):
         decoder = layers.LSTM(512, return_sequences=True)(decoder)
         decoder = layers.TimeDistributed(layers.Dense(n_features * n_notes))(decoder)
         outputs = layers.Dense(n_features, activation="softmax")(decoder)
-        model = Model(inputs=inputs, outputs=outputs)
+        model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
             optimizer=optimizer,
             loss="sparse_categorical_crossentropy",
             metrics=["sparse_categorical_accuracy"],
         )
         return model
+
+    def train(self, x, y, batch_size, epochs, val_split=0.2):
+        """Fit the model to data"""
+        history = self.model.fit(
+            x, y, batch_size=batch_size, epochs=epochs, validation_split=val_split
+        )
+        return history

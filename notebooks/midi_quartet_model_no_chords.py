@@ -1,4 +1,4 @@
-# %% [markdown]
+# %% [Markdown]
 # # MIDI MusicNet string quartet model exploration with pypianoroll representation
 #
 # Alex Kyllo
@@ -27,6 +27,11 @@ from tensorflow.keras import layers, losses, metrics, optimizers, utils
 sys.path.append("..")
 from musiclearn import processing
 from musiclearn.models import vae
+
+# %%
+physical_devices = tf.config.list_physical_devices("GPU")
+tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
 
 # %% [markdown]
 # Get all string quartets from MusicNet dataset
@@ -57,10 +62,19 @@ x = enc.fit_transform(x).astype(int)
 REST_CODE = np.argwhere(enc.categories_[0] == processing.REST)[0][0]
 
 # %%
-x = processing.split_array(x, beats_per_phrase=8, resolution=ticks_per_beat, fill=REST_CODE)
+x = processing.split_array(x, beats_per_phrase=4, resolution=ticks_per_beat, fill=REST_CODE)
 n_timesteps = x.shape[1]
 n_features = x.shape[2]
 shape = (n_timesteps, n_features)
+
+# %%
+# select only the first instrument
+x_0 = x[:, :, 0]
+np.random.shuffle(x_0)
+# select only the phrases that are not only rests
+x_0 = x_0[np.any((x_0 != REST_CODE), axis=1)]
+# squash to range 0-1
+x_0_in = tf.convert_to_tensor(x_0 / n_notes)
 
 # %% [markdown]
 # First, one track autoencoder
@@ -74,15 +88,7 @@ model = vae.OneTrackAE(
 utils.plot_model(model.model, show_shapes=True)
 
 # %%
-# select only the first instrument
-x_0 = x[:, :, 0]
-np.random.shuffle(x_0)
-# select only the phrases that are not only rests
-x_0 = x_0[np.any((x_0 != REST_CODE), axis=1)]
-# squash to range 0-1
-x_0_in = x_0 / n_notes
-# %%
-history = model.train(x_0, x_0, batch_size=32, epochs=100, val_split=0.2)
+history = model.train(x_0_in, x_0, batch_size=32, epochs=100, val_split=0.2)
 history.model.save("violin_lstm_model")
 np.savez(history.history, "violin_lstm_history.npz")
 
@@ -91,11 +97,12 @@ np.savez(history.history, "violin_lstm_history.npz")
 
 # %%
 latent_dim = 8
-opt = optimizers.Adam(learning_rate=0.0001)
-encoder = vae.one_track_encoder(latent_dim, n_timesteps, n_notes)
-decoder = vae.one_track_decoder(latent_dim, n_timesteps, n_notes)
-lstm_vae = vae.VAE(encoder, decoder)
-lstm_vae.compile(optimizer=opt)
-history = lstm_vae.fit(x_0, batch_size=32, epochs=100, validation_split=0.1)
+opt = optimizers.Adam(learning_rate=0.0002)
+# encoder = vae.one_track_encoder(latent_dim, n_timesteps, n_notes)
+# decoder = vae.one_track_decoder(latent_dim, n_timesteps, n_notes)
+# lstm_vae = vae.VAE(encoder, decoder)
+# lstm_vae.compile(optimizer=opt)
+lstm_vae, encoder, decoder = vae.build_one_track_vae(opt, latent_dim, n_timesteps, n_notes)
+history = lstm_vae.fit(x_0, x_0, batch_size=64, epochs=100, validation_split=0.1)
 
 # TODO: implement VAE for multi-track
