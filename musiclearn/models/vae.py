@@ -125,13 +125,12 @@ def one_track_decoder(latent_dim, n_timesteps, n_notes, training=False):
 
     return model
 
-
-def build_one_track_vae(optimizer, latent_dim, n_timesteps, n_notes, dropout_rate=0.2):
+def build_one_track_vae(optimizer, latent_dim, embedding_dim, n_timesteps, n_notes, dropout_rate=0.2):
     """Build the one-track LSTM-VAE"""
     # define encoder model
     inputs = layers.Input(shape=(n_timesteps, 1))
-    encoder = layers.Embedding(n_notes, 8, input_length=n_timesteps)(inputs)
-    encoder = layers.Reshape((n_timesteps, 8))(encoder)
+    encoder = layers.Embedding(n_notes, embedding_dim, input_length=n_timesteps)(inputs)
+    encoder = layers.Reshape((n_timesteps, embedding_dim))(encoder)
     encoder = layers.LSTM(256, return_sequences=True)(encoder)
     encoder = layers.Dropout(dropout_rate)(encoder)
     encoder = layers.LSTM(256, return_sequences=False)(encoder)
@@ -154,18 +153,6 @@ def build_one_track_vae(optimizer, latent_dim, n_timesteps, n_notes, dropout_rat
     decoder_outputs = decoder_model(z)
     vae_model = keras.Model(inputs=inputs, outputs=decoder_outputs)
 
-    # def vae_loss(y_true, y_pred, beta=1.0):
-    #     with tf.GradientTape():
-    #         reconstruction_loss = tf.reduce_mean(
-    #             tf.reduce_sum(
-    #                 keras.losses.sparse_categorical_crossentropy(y_true, y_pred), axis=(1, 2)
-    #             )
-    #         )
-    #         kl_loss = -0.5 * (1 + sigma - tf.square(mu) - tf.exp(sigma))
-    #         kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
-    #         total_loss = reconstruction_loss + kl_loss
-    #         return total_loss
-
     kl_loss = -0.5 * tf.reduce_mean(sigma - tf.square(mu) - tf.exp(sigma) + 1)
     vae_model.add_loss(kl_loss)
     vae_model.compile(
@@ -176,6 +163,7 @@ def build_one_track_vae(optimizer, latent_dim, n_timesteps, n_notes, dropout_rat
 
     return vae_model, encoder_model, decoder_model
 
+def build_multi_track_vae(optimizer, latent_dim,
 
 class OneTrackAE:
     def __init__(self, optimizer, n_timesteps, n_notes):

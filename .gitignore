@@ -446,3 +446,4 @@ Pipfile.lock
 /notebooks/quartets.npy
 /notebooks/*.npy
 /notebooks/*.joblib
+/notebooks/lstm_vae.hdf5

@@ -9,9 +9,8 @@
 # %%
 #%load_ext autoreload
 #%autoreload 2
-
-import itertools
 # %%
+import itertools
 import os
 import pathlib
 import sys
@@ -96,14 +95,24 @@ np.savez(history.history, "violin_lstm_history.npz")
 # Variational AE (one track)
 
 # %%
-latent_dim = 8
+latent_dim = 100
+embedding_dim = 8
 opt = optimizers.Adam(learning_rate=0.0002)
 # encoder = vae.one_track_encoder(latent_dim, n_timesteps, n_notes)
 # decoder = vae.one_track_decoder(latent_dim, n_timesteps, n_notes)
 # lstm_vae = vae.VAE(encoder, decoder)
 # lstm_vae.compile(optimizer=opt)
-lstm_vae, encoder, decoder = vae.build_one_track_vae(opt, latent_dim, n_timesteps, n_notes)
-history = lstm_vae.fit(x_0, x_0, batch_size=64, epochs=100, validation_split=0.1)
+lstm_vae, encoder, decoder = vae.build_one_track_vae(
+    opt, latent_dim, embedding_dim, n_timesteps, n_notes
+)
+history = lstm_vae.fit(x_0, x_0, batch_size=32, epochs=500, validation_split=0.1)
+lstm_vae.save_weights("lstm_vae.hdf5")
+# %% [markdown]
+# Generate samples from the VAE
+
+pred_0 = np.argmax(lstm_vae.predict(x_0[0:1, :]), axis=2)
+pred_0
+
 
 # %% [markdown]
 #
