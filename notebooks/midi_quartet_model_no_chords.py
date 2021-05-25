@@ -66,6 +66,16 @@ n_timesteps = x.shape[1]
 n_features = x.shape[2]
 shape = (n_timesteps, n_features)
 
+# %% [markdown]
+# Remove the phrases that consist only of rests
+
+# %%
+ALL_RESTS = REST_CODE * n_timesteps * n_features
+x = x[x.sum(axis=(1, 2)) != ALL_RESTS]
+
+# %% [markdown]
+# Variational LSTM-AE (one track)
+
 # %%
 # select only the first instrument
 x_0 = x[:, :, 0]
@@ -75,35 +85,14 @@ x_0 = x_0[np.any((x_0 != REST_CODE), axis=1)]
 # squash to range 0-1
 x_0_in = tf.convert_to_tensor(x_0 / n_notes)
 
-# %% [markdown]
-# First, one track autoencoder
-
-# %%
-model = vae.OneTrackAE(
-    optimizer=optimizers.Adam(learning_rate=0.001),
-    n_timesteps=n_timesteps,
-    n_notes=n_notes,
-)
-utils.plot_model(model.model, show_shapes=True)
-
-# %%
-history = model.train(x_0_in, x_0, batch_size=32, epochs=100, val_split=0.2)
-history.model.save("violin_lstm_model")
-np.savez(history.history, "violin_lstm_history.npz")
-
-# %% [markdown]
-# Variational AE (one track)
-
 # %%
 latent_dim = 100
 embedding_dim = 8
 opt = optimizers.Adam(learning_rate=0.0002)
-# encoder = vae.one_track_encoder(latent_dim, n_timesteps, n_notes)
-# decoder = vae.one_track_decoder(latent_dim, n_timesteps, n_notes)
-# lstm_vae = vae.VAE(encoder, decoder)
-# lstm_vae.compile(optimizer=opt)
+
+# %%
 lstm_vae, encoder, decoder = vae.build_one_track_vae(
-    opt, latent_dim, embedding_dim, n_timesteps, n_notes
+    opt, latent_dim, embedding_dim, n_timesteps, n_notes, dropout_rate=0.2
 )
 history = lstm_vae.fit(x_0, x_0, batch_size=32, epochs=500, validation_split=0.1)
 lstm_vae.save_weights("lstm_vae.hdf5")
@@ -113,10 +102,16 @@ lstm_vae.save_weights("lstm_vae.hdf5")
 pred_0 = np.argmax(lstm_vae.predict(x_0[0:1, :]), axis=2)
 pred_0
 
-
+# %% [markdown]
+# Variational LSTM-AE (four track)
+mtvae, mencoder, mdecoder = vae.build_multi_track_vae(
+    opt, latent_dim, embedding_dim, n_timesteps, n_features, n_notes, dropout_rate=0.2
+)
+mhistory = mtvae.fit(x, tf.unstack(x, axis=2), batch_size=32, epochs=100, validation_split=0.1)
+mtvae.save_weights("mtvae.hdf5")
 # %% [markdown]
 #
 # - [] TODO: try one-hot encoding instead?
 # - [] TODO: Try higher dimension embedding?
-# - [] TODO: Try Higher latent dimension
+# - [X] TODO: Try Higher latent dimension
 # - [] TODO: Implement VAE for multi-track

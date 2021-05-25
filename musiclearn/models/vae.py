@@ -125,7 +125,10 @@ def one_track_decoder(latent_dim, n_timesteps, n_notes, training=False):
 
     return model
 
-def build_one_track_vae(optimizer, latent_dim, embedding_dim, n_timesteps, n_notes, dropout_rate=0.2):
+
+def build_one_track_vae(
+    optimizer, latent_dim, embedding_dim, n_timesteps, n_notes, dropout_rate=0.2
+):
     """Build the one-track LSTM-VAE"""
     # define encoder model
     inputs = layers.Input(shape=(n_timesteps, 1))
@@ -163,67 +166,48 @@ def build_one_track_vae(optimizer, latent_dim, embedding_dim, n_timesteps, n_not
 
     return vae_model, encoder_model, decoder_model
 
-def build_multi_track_vae(optimizer, latent_dim,
 
-class OneTrackAE:
-    def __init__(self, optimizer, n_timesteps, n_notes):
-        self.model = self._build(optimizer, n_timesteps, n_notes)
+def build_multi_track_vae(
+    optimizer, latent_dim, embedding_dim, n_timesteps, n_tracks, n_notes, dropout_rate=0.2
+):
+    """Build the multi-track LSTM-VAE."""
+    # define encoder model
+    inputs = layers.Input(shape=(n_timesteps, n_tracks))
+    encoder = layers.Embedding(n_notes, embedding_dim, input_length=n_timesteps)(inputs)
+    encoder = layers.Reshape((n_timesteps, embedding_dim * n_tracks))(encoder)
+    encoder = layers.LSTM(256, return_sequences=True)(encoder)
+    encoder = layers.Dropout(dropout_rate)(encoder)
+    encoder = layers.LSTM(256, return_sequences=False)(encoder)
+    mu = layers.Dense(latent_dim, name="mu")(encoder)
+    sigma = layers.Dense(latent_dim, name="sigma")(encoder)
+    # Latent space sampling
+    z = layers.Lambda(sample_normal, output_shape=(latent_dim,))([mu, sigma])
+    encoder_model = keras.Model(inputs, [mu, sigma, z])
 
-    def _build(self, optimizer, n_timesteps, n_notes):
-        """Build and compile the network"""
-        inputs = layers.Input(shape=(n_timesteps, 1))
-        encoder = layers.Embedding(n_notes, 8, input_length=n_timesteps)(inputs)
-        encoder = layers.Reshape((n_timesteps, 8))(encoder)
-        encoder = layers.LSTM(128, return_sequences=True)(inputs)
-        encoder = layers.Dropout(0.2)(encoder)
-        encoder = layers.LSTM(128, return_sequences=False)(encoder)
-        decoder = layers.RepeatVector(n_timesteps)(encoder)
-        decoder = layers.LSTM(128, return_sequences=True)(decoder)
-        decoder = layers.Dropout(0.2)(decoder)
-        decoder = layers.LSTM(128, return_sequences=True)(decoder)
-        decoder = layers.TimeDistributed(layers.Dense(n_notes, activation="softmax"))(decoder)
-        model = keras.Model(inputs=inputs, outputs=decoder)
-        model.compile(
-            optimizer=optimizer,
-            loss="sparse_categorical_crossentropy",
-            metrics=["sparse_categorical_accuracy"],
-        )
-        return model
+    # define decoder model
+    decoder_input = layers.Input(shape=(latent_dim,))
+    decoder = layers.RepeatVector(n_timesteps)(decoder_input)
+    decoder = layers.LSTM(256, return_sequences=True)(decoder)
+    decoder = layers.Dropout(dropout_rate)(decoder)
+    decoder = layers.LSTM(256, return_sequences=True)(decoder)
+    outputs = [
+        layers.TimeDistributed(layers.Dense(n_notes, activation="softmax"))(decoder)
+        for _ in range(n_tracks)
+    ]
+    concat_outputs = layers.Concatenate(axis=2)(outputs)
+    decoder_model = keras.Model(decoder_input, concat_outputs)
 
-    def train(self, x, y, batch_size, epochs, val_split=0.2):
-        """Fit the model to data"""
-        history = self.model.fit(
-            x, y, batch_size=batch_size, epochs=epochs, validation_split=val_split
-        )
-        return history
+    # connect encoder and decoder together
+    decoder_outputs = decoder_model(z)
+    vae_model = keras.Model(inputs=inputs, outputs=decoder_outputs)
 
+    kl_loss = -0.5 * tf.reduce_mean(sigma - tf.square(mu) - tf.exp(sigma) + 1)
+    vae_model.add_loss(kl_loss)
 
-class MultiTrackVAE:
-    """"""
+    vae_model.compile(
+        optimizer=optimizer,
+        loss="sparse_categorical_crossentropy",
+        metrics=["sparse_categorical_accuracy"],
+    )
 
-    # TODO
-    def __init__(self, optimizer, n_timesteps, n_features, n_notes):
-        super().__init__(optimizer, n_timesteps, n_features, n_notes)
-
-    def _build(self, optimizer, n_timesteps, n_features, n_notes):
-        """Build and compile the network"""
-        inputs = layers.Input(shape=(n_timesteps, n_features))
-        encoder = layers.LSTM(512, return_sequences=True)(inputs)
-        decoder = layers.RepeatVector(n_timesteps)(encoder)
-        decoder = layers.LSTM(512, return_sequences=True)(decoder)
-        decoder = layers.TimeDistributed(layers.Dense(n_features * n_notes))(decoder)
-        outputs = layers.Dense(n_features, activation="softmax")(decoder)
-        model = keras.Model(inputs=inputs, outputs=outputs)
-        model.compile(
-            optimizer=optimizer,
-            loss="sparse_categorical_crossentropy",
-            metrics=["sparse_categorical_accuracy"],
-        )
-        return model
-
-    def train(self, x, y, batch_size, epochs, val_split=0.2):
-        """Fit the model to data"""
-        history = self.model.fit(
-            x, y, batch_size=batch_size, epochs=epochs, validation_split=val_split
-        )
-        return history
+    return vae_model, encoder_model, decoder_model
