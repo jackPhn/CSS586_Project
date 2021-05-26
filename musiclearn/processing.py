@@ -1,6 +1,7 @@
 """processing.py
 Preprocessing audio data (.wav files) for analysis.
 """
+import logging
 import os
 import sys
 from functools import reduce
@@ -15,6 +16,9 @@ from music21 import chord, converter, instrument, note, stream
 from tensorflow import keras
 
 from musiclearn import config
+
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.DEBUG)
 
 
 class MIDIDataGenerator(keras.utils.Sequence):
@@ -182,7 +186,7 @@ def multitracks_by_instruments(
                     multitracks.append(current_mt)
                     fnames.append(str(f))
         except:  # probably a corrupt MIDI file
-            print(f"Failed to read {f}", file=sys.stderr)
+            LOG.warn(f"Failed to read MIDI file {f}")
     return multitracks, fnames
 
 
@@ -302,19 +306,19 @@ def musicnet_quartets_to_music21(program_ids=None):
     fnames = []
     for composer in composers:
         mid_files = list((path / composer).glob("*.mid"))
+        LOG.info(f"Reading MIDI files in {str(path / composer)}...")
         for f in mid_files:
-            print(f"Reading {f}...")
             try:
                 score = converter.parse(f)
                 if score:
                     # sort the MIDI tracks by program # and check if exactly equal to the list
                     programs = sorted([p.getInstrument().midiProgram for p in score.parts])
                     if programs == sorted(program_ids):
-                        print(f"{f} is a match.")
+                        LOG.info(f"{f} is a match.")
                         scores.append(score)
                         fnames.append(str(f))
             except:  # probably a corrupt MIDI file
-                print(f"Failed to read {f}", file=sys.stderr)
+                LOG.warn(f"Failed to read {f}")
     return scores, fnames
 
 
@@ -493,7 +497,8 @@ def get_string_quartets(ticks_per_beat: int):
     Get all the MusicNet string quartets into a NumPy tensor,
     splitting into phrases.
     """
-    here = Path(os.path.abspath(__file__))
+    here = Path(os.path.dirname(os.path.abspath(__file__)))
+    os.makedirs(here / "data", exist_ok=True)
     f = here / f"../data/quartets_music21_{ticks_per_beat}.npy"
     program_ids = [40, 40, 41, 42]
     ticks_per_beat = 4

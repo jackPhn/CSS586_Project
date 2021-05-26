@@ -3,7 +3,9 @@
 Helper functions for running experiments.
 """
 import logging
+import os
 from datetime import datetime
+from pathlib import Path
 
 from tensorflow.keras import callbacks
 
@@ -17,21 +19,25 @@ LOG.setLevel(logging.DEBUG)
 def build_callbacks(exp_name: str, start_time: datetime, patience: int = 10):
     """Build an array of callbacks for model training."""
     start_str = start_time.strftime("%Y-%m-%dT%H:%M:%S")
+    exp_path = Path(f"experiments/{exp_name}/{start_str}")
+    os.makedirs(exp_path, exist_ok=True)
     cbacks = [
-        callbacks.ModelCheckpoint(f"experiments/{exp_name}/{start_str}/"),
+        callbacks.ModelCheckpoint(
+            exp_path / "checkpoints",
+            save_weights_only=True,
+            monitor="val_loss",
+            save_best_only=True,
+        ),
         callbacks.EarlyStopping(
             monitor="val_loss",
             patience=patience,
             verbose=1,
             restore_best_weights=True,
         ),
-        callbacks.CSVLogger(
-            f"experiments/{exp_name}/{start_str}/history.csv", separator=",", append=True
-        ),
-        callbacks.TensorBoard(
-            log_dir=f"experiments/{exp_name}/{start_str}/tensorboard/", histogram_freq=1
-        ),
+        callbacks.CSVLogger(exp_path / "history.csv", separator=",", append=True),
+        callbacks.TensorBoard(log_dir=exp_path / "tensorboard", histogram_freq=1),
     ]
+
     return cbacks
 
 
@@ -52,6 +58,7 @@ def train_mtvae(
     epochs,
     batch_size,
     learning_rate,
+    lstm_units,
     latent_dim,
     embedding_dim,
     dropout_rate,
@@ -59,12 +66,22 @@ def train_mtvae(
 ):
     """"""
     # String quartet MIDI programs
-    x = processing.get_string_quartets(ticks_per_beat, beats_per_phrase)
-    mtvae = vae.MultiTrackVAE(embedding_dim, latent_dim, learning_rate, dropout_rate)
+    x = processing.get_string_quartets(ticks_per_beat)
+    mtvae = vae.MultiTrackVAE(lstm_units, embedding_dim, latent_dim, learning_rate, dropout_rate)
     start_time = datetime.now()
     cbacks = build_callbacks(exp_name, start_time, patience=patience)
     log_start(
         exp_name,
+        ticks_per_beat=ticks_per_beat,
+        beats_per_phrase=beats_per_phrase,
+        epochs=epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        lstm_units=lstm_units,
+        latent_dim=latent_dim,
+        embedding_dim=embedding_dim,
+        dropout_rate=dropout_rate,
+        patience=patience,
     )
     mtvae.train(
         x, ticks_per_beat, beats_per_phrase, epochs, batch_size, learning_rate, callbacks=cbacks

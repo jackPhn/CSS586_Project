@@ -132,10 +132,9 @@ class MultiTrackVAE:
     ):
         """Train the model on a dataset."""
         # Dataset prep, ordinal encoding
-        self.n_timesteps = x.shape[1]
-        self.n_features = x.shape[2]
         notes = np.unique(x)
         n_notes = notes.shape[0]
+        self.n_tracks = x.shape[1]
         self.ord_enc = OrdinalEncoder(categories=list(itertools.repeat(notes, self.n_tracks)))
         x = self.ord_enc.fit_transform(x).astype(int)
         self.rest_code = np.argwhere(self.ord_enc.categories_[0] == processing.REST)[0][0]
@@ -143,8 +142,9 @@ class MultiTrackVAE:
         x = processing.split_array(
             x, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
         )
+        self.n_timesteps = x.shape[1]
         # Remove phrases that are only rests
-        all_rests = self.rest_code * self.n_timesteps * self.n_features
+        all_rests = self.rest_code * self.n_timesteps * self.n_tracks
         x = x[x.sum(axis=(1, 2)) != all_rests]
         self.vae_model, self.encoder_model, self.decoder_model = build_multi_track_vae(
             self.optimizer,
@@ -159,8 +159,8 @@ class MultiTrackVAE:
         self.history = self.vae_model.fit(
             x,
             tf.unstack(x, axis=2),
-            batch_size=self.batch_size,
-            epochs=self.epochs,
+            batch_size=batch_size,
+            epochs=epochs,
             validation_split=0.1,
             callbacks=callbacks,
         )

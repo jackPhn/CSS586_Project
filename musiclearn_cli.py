@@ -8,8 +8,13 @@ from tensorflow.random import set_seed
 
 from musiclearn import training
 
-LOG = logging.getLogger(__name__)
+LOG = logging.getLogger("musiclearn")
 LOG.setLevel(logging.DEBUG)
+fh = logging.FileHandler("musiclearn.log")
+fh.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fh.setFormatter(formatter)
+LOG.addHandler(fh)
 
 
 def set_seeds(seed):
@@ -21,8 +26,8 @@ def set_seeds(seed):
 
 @click.command()
 @click.argument("exp_name", type=click.STRING)
-@click.option("--ticks-per-beat", type=click.INT, default=500, help="Time steps per quarter note.")
-@click.option("--beats-per-phrase", type=click.INT, default=500, help="Quarter notes per phrase.")
+@click.option("--ticks-per-beat", type=click.INT, default=4, help="Time steps per quarter note.")
+@click.option("--beats-per-phrase", type=click.INT, default=4, help="Quarter notes per phrase.")
 @click.option("--epochs", type=click.INT, default=500, help="The training batch size.")
 @click.option("--batch-size", type=click.INT, default=32, help="The training batch size.")
 @click.option(
@@ -32,7 +37,7 @@ def set_seeds(seed):
 @click.option("--latent-dim", type=click.INT, default=100, help="The latent vector dimension.")
 @click.option("--embedding-dim", type=click.INT, default=8, help="The note embedding dimension.")
 @click.option(
-    "--dropout-rate", type=click.FLOAT, default=0.5, help="The dropout rate between LSTM layers"
+    "--dropout-rate", type=click.FLOAT, default=0.4, help="The dropout rate between LSTM layers"
 )
 def fit_mtvae(
     exp_name,

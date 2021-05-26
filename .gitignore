@@ -448,3 +448,4 @@ Pipfile.lock
 /notebooks/*.joblib
 /notebooks/lstm_vae.hdf5
 /notebooks/mtvae.hdf5
+/experiments/
