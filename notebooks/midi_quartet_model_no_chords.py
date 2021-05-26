@@ -36,13 +36,13 @@ tf.config.experimental.set_memory_growth(physical_devices[0], True)
 # Get all string quartets from MusicNet dataset
 
 # %%
-f = "quartets_music21_nochords.npy"
+f = "../data/quartets_music21_4.npy"
 program_ids = [40, 40, 41, 42]
 ticks_per_beat = 4
 if os.path.isfile(f):
     x = np.load(f, allow_pickle=True)
 else:
-    scores_file = "scores.joblib"
+    scores_file = "../data/quartets.joblib"
     if os.path.isfile(scores_file):
         scores, fnames = joblib.load(scores_file)
     else:
@@ -86,6 +86,7 @@ x_0 = x_0[np.any((x_0 != REST_CODE), axis=1)]
 x_0_in = tf.convert_to_tensor(x_0 / n_notes)
 
 # %%
+lstm_units = 256
 latent_dim = 100
 embedding_dim = 8
 opt = optimizers.Adam(learning_rate=0.0002)
@@ -105,7 +106,7 @@ pred_0
 # %% [markdown]
 # Variational LSTM-AE (four track)
 mtvae, mencoder, mdecoder = vae.build_multi_track_vae(
-    opt, latent_dim, embedding_dim, n_timesteps, n_features, n_notes, dropout_rate=0.2
+    opt, lstm_units, latent_dim, embedding_dim, n_timesteps, n_features, n_notes, dropout_rate=0.2
 )
 mhistory = mtvae.fit(x, tf.unstack(x, axis=2), batch_size=32, epochs=100, validation_split=0.1)
 mtvae.save_weights("mtvae.hdf5")
@@ -114,4 +115,4 @@ mtvae.save_weights("mtvae.hdf5")
 # - [] TODO: try one-hot encoding instead?
 # - [] TODO: Try higher dimension embedding?
 # - [X] TODO: Try Higher latent dimension
-# - [] TODO: Implement VAE for multi-track
+# - [X] TODO: Implement VAE for multi-track

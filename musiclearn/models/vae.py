@@ -1,10 +1,15 @@
 """models/vae.py
 Music Variational Autoencoders
 """
+import itertools
+
+import numpy as np
 import tensorflow as tf
+from musiclearn import processing
+from sklearn.preprocessing import OrdinalEncoder
 from tensorflow import keras
 from tensorflow.keras import backend as K
-from tensorflow.keras import layers
+from tensorflow.keras import layers, optimizers
 
 
 def sample_normal(inputs):
@@ -14,116 +19,6 @@ def sample_normal(inputs):
     epsilon = K.random_normal(shape=(batch, dim))
     sample = mu + tf.exp(0.5 * sigma) * epsilon
     return sample
-
-
-class Sampling(layers.Layer):
-    """A layer for sampling from the latent code distribution."""
-
-    def call(self, inputs):
-        return sample_normal(inputs)
-
-
-def loss(y_true, y_pred, beta=1.0):
-    """VAE multi-objective cross entropy / KL divergence loss function"""
-    reconst_loss = K.sum(keras.losses.sparse_categorical_crossentropy(y_true, y_pred), axis=1)
-    diverge_loss = K.sum(keras.losses.kl_divergence(y_true, y_pred), axis=-1)
-    return K.mean(reconst_loss + beta * diverge_loss)
-
-
-class VAE(keras.Model):
-    def __init__(self, encoder, decoder, **kwargs):
-        super(VAE, self).__init__(**kwargs)
-        self.encoder = encoder
-        self.decoder = decoder
-        self.total_loss_tracker = keras.metrics.Mean(name="total_loss")
-        self.reconstruction_loss_tracker = keras.metrics.Mean(name="reconstruction_loss")
-        self.kl_loss_tracker = keras.metrics.Mean(name="kl_loss")
-
-    @property
-    def metrics(self):
-        return [
-            self.total_loss_tracker,
-            self.reconstruction_loss_tracker,
-            self.kl_loss_tracker,
-        ]
-
-    def train_step(self, data):
-        """"""
-        # https://keras.io/examples/generative/vae/#define-the-vae-as-a-model-with-a-custom-trainstep
-        with tf.GradientTape() as tape:
-            z_mean, z_log_var, z = self.encoder(data)
-            reconstruction = self.decoder(z)
-            reconstruction_loss = tf.reduce_mean(
-                tf.reduce_sum(
-                    keras.losses.sparse_categorical_crossentropy(data, reconstruction), axis=1
-                )
-            )
-            kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
-            kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
-            total_loss = reconstruction_loss + kl_loss
-        grads = tape.gradient(total_loss, self.trainable_weights)
-        self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
-        self.total_loss_tracker.update_state(total_loss)
-        self.reconstruction_loss_tracker.update_state(reconstruction_loss)
-        self.kl_loss_tracker.update_state(kl_loss)
-        return {
-            "loss": self.total_loss_tracker.result(),
-            "reconstruction_loss": self.reconstruction_loss_tracker.result(),
-            "kl_loss": self.kl_loss_tracker.result(),
-        }
-
-    def test_step(self, data):
-        """Validation"""
-        print("test_step called!")
-        z_mean, z_log_var, z = self.encoder(data, training=False)
-        reconstruction = self.decoder(z, training=False)
-        reconstruction_loss = tf.reduce_mean(
-            tf.reduce_sum(
-                keras.losses.sparse_categorical_crossentropy(data, reconstruction), axis=1
-            )
-        )
-        kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
-        kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
-        total_loss = reconstruction_loss + kl_loss
-        self.total_loss_tracker.update_state(total_loss)
-        self.reconstruction_loss_tracker.update_state(reconstruction_loss)
-        self.kl_loss_tracker.update_state(kl_loss)
-        return {
-            "val_loss": self.total_loss_tracker.result(),
-            "val_reconstruction_loss": self.reconstruction_loss_tracker.result(),
-            "val_kl_loss": self.kl_loss_tracker.result(),
-        }
-
-    def call(self, inputs, training=None, mask=None):
-        _, _, z = self.encoder(inputs, training=training, mask=mask)
-        return self.decoder(z)
-
-
-def one_track_encoder(latent_dim, n_timesteps, n_notes, training=False):
-    inputs = layers.Input(shape=(n_timesteps, 1))
-    encoder = layers.Embedding(n_notes, 8, input_length=n_timesteps)(inputs)
-    encoder = layers.Reshape((n_timesteps, 8))(encoder)
-    encoder = layers.LSTM(128, return_sequences=True)(inputs)
-    encoder = layers.Dropout(0.2)(encoder, training=training)
-    encoder = layers.LSTM(128, return_sequences=False)(encoder)
-    mu = layers.Dense(latent_dim, name="mu")(encoder)
-    sigma = layers.Dense(latent_dim, name="sigma")(encoder)
-    z = Sampling()([mu, sigma])
-    model = keras.Model(inputs, [mu, sigma, z], name="encoder")
-
-    return model
-
-
-def one_track_decoder(latent_dim, n_timesteps, n_notes, training=False):
-    inputs = layers.Input(shape=(latent_dim,))
-    decoder = layers.RepeatVector(n_timesteps)(inputs)
-    decoder = layers.LSTM(128, return_sequences=True)(decoder)
-    decoder = layers.Dropout(0.2)(decoder, training=training)
-    decoder = layers.LSTM(128, return_sequences=True)(decoder)
-    outputs = layers.TimeDistributed(layers.Dense(n_notes, activation="softmax"))(decoder)
-    model = keras.Model(inputs, outputs, name="decoder")
-
-    return model
 
 
 def build_one_track_vae(
@@ -168,16 +63,23 @@ def build_one_track_vae(
 
 
 def build_multi_track_vae(
-    optimizer, latent_dim, embedding_dim, n_timesteps, n_tracks, n_notes, dropout_rate=0.2
+    optimizer,
+    lstm_units,
+    latent_dim,
+    embedding_dim,
+    n_timesteps,
+    n_tracks,
+    n_notes,
+    dropout_rate=0.2,
 ):
     """Build the multi-track LSTM-VAE."""
     # define encoder model
     inputs = layers.Input(shape=(n_timesteps, n_tracks))
     encoder = layers.Embedding(n_notes, embedding_dim, input_length=n_timesteps)(inputs)
     encoder = layers.Reshape((n_timesteps, embedding_dim * n_tracks))(encoder)
-    encoder = layers.LSTM(256, return_sequences=True)(encoder)
+    encoder = layers.LSTM(lstm_units, return_sequences=True)(encoder)
     encoder = layers.Dropout(dropout_rate)(encoder)
-    encoder = layers.LSTM(256, return_sequences=False)(encoder)
+    encoder = layers.LSTM(lstm_units, return_sequences=False)(encoder)
     mu = layers.Dense(latent_dim, name="mu")(encoder)
     sigma = layers.Dense(latent_dim, name="sigma")(encoder)
     # Latent space sampling
@@ -187,9 +89,9 @@ def build_multi_track_vae(
     # define decoder model
     decoder_input = layers.Input(shape=(latent_dim,))
     decoder = layers.RepeatVector(n_timesteps)(decoder_input)
-    decoder = layers.LSTM(256, return_sequences=True)(decoder)
+    decoder = layers.LSTM(lstm_units, return_sequences=True)(decoder)
     decoder = layers.Dropout(dropout_rate)(decoder)
-    decoder = layers.LSTM(256, return_sequences=True)(decoder)
+    decoder = layers.LSTM(lstm_units, return_sequences=True)(decoder)
     outputs = [
         layers.TimeDistributed(layers.Dense(n_notes, activation="softmax"))(decoder)
         for _ in range(n_tracks)
@@ -211,3 +113,59 @@ def build_multi_track_vae(
     )
 
     return vae_model, encoder_model, decoder_model
+
+
+class MultiTrackVAE:
+    def __init__(self, lstm_units, embedding_dim, latent_dim, learning_rate, dropout_rate):
+        self.lstm_units = lstm_units
+        self.n_timesteps, self.n_tracks = (None, None)
+        self.optimizer = optimizers.Adam(learning_rate)
+        self.embedding_dim = embedding_dim
+        self.latent_dim = latent_dim
+        self.dropout_rate = dropout_rate
+        self.vae_model, self.encoder_model, self.decoder_model = (None, None, None)
+        self.ord_enc = None
+        self.rest_code = None
+
+    def train(
+        self, x, ticks_per_beat, beats_per_phrase, epochs, batch_size, learning_rate, callbacks=None
+    ):
+        """Train the model on a dataset."""
+        # Dataset prep, ordinal encoding
+        self.n_timesteps = x.shape[1]
+        self.n_features = x.shape[2]
+        notes = np.unique(x)
+        n_notes = notes.shape[0]
+        self.ord_enc = OrdinalEncoder(categories=list(itertools.repeat(notes, self.n_tracks)))
+        x = self.ord_enc.fit_transform(x).astype(int)
+        self.rest_code = np.argwhere(self.ord_enc.categories_[0] == processing.REST)[0][0]
+        # Split songs into phrases
+        x = processing.split_array(
+            x, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
+        )
+        # Remove phrases that are only rests
+        all_rests = self.rest_code * self.n_timesteps * self.n_features
+        x = x[x.sum(axis=(1, 2)) != all_rests]
+        self.vae_model, self.encoder_model, self.decoder_model = build_multi_track_vae(
+            self.optimizer,
+            self.lstm_units,
+            self.latent_dim,
+            self.embedding_dim,
+            self.n_timesteps,
+            self.n_tracks,
+            n_notes,
+            self.dropout_rate,
+        )
+        self.history = self.vae_model.fit(
+            x,
+            tf.unstack(x, axis=2),
+            batch_size=self.batch_size,
+            epochs=self.epochs,
+            validation_split=0.1,
+            callbacks=callbacks,
+        )
+        return self
+
+    def generate():
+        """TODO: write a function to generate MIDI output"""
+        raise NotImplementedError()

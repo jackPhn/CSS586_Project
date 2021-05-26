@@ -7,6 +7,7 @@ from functools import reduce
 from pathlib import Path
 from typing import List, Tuple
 
+import joblib
 import numpy as np
 import pandas as pd
 import pypianoroll
@@ -485,3 +486,28 @@ def test_split_array():
     assert arr.shape == (7309, 4)
     arr_split = split_array(arr, beats_per_phrase=16)
     assert arr_split.shape == (39, 192, 4)
+
+
+def get_string_quartets(ticks_per_beat: int):
+    """
+    Get all the MusicNet string quartets into a NumPy tensor,
+    splitting into phrases.
+    """
+    here = Path(os.path.abspath(__file__))
+    f = here / f"../data/quartets_music21_{ticks_per_beat}.npy"
+    program_ids = [40, 40, 41, 42]
+    ticks_per_beat = 4
+    if os.path.isfile(f):
+        x = np.load(f, allow_pickle=True)
+    else:
+        scores_file = here / "../data/quartets.joblib"
+        if os.path.isfile(scores_file):
+            scores, fnames = joblib.load(scores_file)
+        else:
+            # Read all MusicNet string quartets from the raw .mid files
+            scores, fnames = musicnet_quartets_to_music21(program_ids=program_ids)
+            joblib.dump((scores, fnames), scores_file)
+        # Stack them into one big 2D array
+        x = np.vstack([score_to_array(score, resolution=ticks_per_beat) for score in scores])
+        np.save(f, x)
+    return x
