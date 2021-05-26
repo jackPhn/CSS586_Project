@@ -41,14 +41,14 @@ def build_callbacks(exp_name: str, start_time: datetime, patience: int = 10):
     return cbacks
 
 
-def log_start(exp_name, **hparams):
-    LOG.info(f"Running experiment {exp_name} with hparams: {hparams}")
+def log_start(exp_name, model_name, **hparams):
+    LOG.info(f"Running experiment {exp_name} for model {model_name} with hparams: {hparams}")
 
 
-def log_end(exp_name, start_time):
+def log_end(exp_name, model_name, start_time):
     end_time = datetime.now()
     duration = end_time - start_time
-    LOG.info(f"Experiment {exp_name} finished in {duration}")
+    LOG.info(f"Experiment {exp_name} for model {model_name} finished in {duration}")
 
 
 def train_mtvae(
@@ -68,10 +68,12 @@ def train_mtvae(
     # String quartet MIDI programs
     x = processing.get_string_quartets(ticks_per_beat)
     mtvae = vae.MultiTrackVAE(lstm_units, embedding_dim, latent_dim, learning_rate, dropout_rate)
+    model_name = type(mtvae).__name__
     start_time = datetime.now()
     cbacks = build_callbacks(exp_name, start_time, patience=patience)
     log_start(
         exp_name,
+        model_name,
         ticks_per_beat=ticks_per_beat,
         beats_per_phrase=beats_per_phrase,
         epochs=epochs,
@@ -86,4 +88,4 @@ def train_mtvae(
     mtvae.train(
         x, ticks_per_beat, beats_per_phrase, epochs, batch_size, learning_rate, callbacks=cbacks
     )
-    log_end(exp_name, start_time)
+    log_end(exp_name, model_name, start_time)
