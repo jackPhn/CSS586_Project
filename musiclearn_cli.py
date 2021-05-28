@@ -39,6 +39,8 @@ def set_seeds(seed):
 @click.option(
     "--dropout-rate", type=click.FLOAT, default=0.4, help="The dropout rate between LSTM layers"
 )
+@click.option("--gru/--lstm", default=False, help="Use GRU layer instead of LSTM.")
+@click.option("--patience", type=click.INT, default=10, help="The early stopping patience.")
 def fit_mtvae(
     exp_name,
     ticks_per_beat,
@@ -50,6 +52,8 @@ def fit_mtvae(
     latent_dim,
     embedding_dim,
     dropout_rate,
+    gru,
+    patience,
 ):
     """Run MultiTrackVAE experiment named EXP_NAME with hyperparameter options."""
     training.train_mtvae(
@@ -63,6 +67,8 @@ def fit_mtvae(
         latent_dim,
         embedding_dim,
         dropout_rate,
+        gru,
+        patience,
     )
 
 

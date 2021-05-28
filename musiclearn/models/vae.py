@@ -9,7 +9,7 @@ from musiclearn import processing
 from sklearn.preprocessing import OrdinalEncoder
 from tensorflow import keras
 from tensorflow.keras import backend as K
-from tensorflow.keras import layers, optimizers
+from tensorflow.keras import layers, models, optimizers
 
 
 def sample_normal(inputs):
@@ -22,7 +22,12 @@ def sample_normal(inputs):
 
 
 def build_one_track_vae(
-    optimizer, latent_dim, embedding_dim, n_timesteps, n_notes, dropout_rate=0.2
+    optimizer,
+    latent_dim,
+    embedding_dim,
+    n_timesteps,
+    n_notes,
+    dropout_rate=0.2,
 ):
     """Build the one-track LSTM-VAE"""
     # define encoder model
@@ -71,15 +76,23 @@ def build_multi_track_vae(
     n_tracks,
     n_notes,
     dropout_rate=0.2,
+    gru=False,
 ):
     """Build the multi-track LSTM-VAE."""
     # define encoder model
     inputs = layers.Input(shape=(n_timesteps, n_tracks))
-    encoder = layers.Embedding(n_notes, embedding_dim, input_length=n_timesteps)(inputs)
-    encoder = layers.Reshape((n_timesteps, embedding_dim * n_tracks))(encoder)
-    encoder = layers.LSTM(lstm_units, return_sequences=True)(encoder)
+    if gru:
+        rnn = layers.GRU
+    else:
+        rnn = layers.LSTM
+    if embedding_dim > 0:
+        encoder = layers.Embedding(n_notes, embedding_dim, input_length=n_timesteps)(inputs)
+        encoder = layers.Reshape((n_timesteps, embedding_dim * n_tracks))(encoder)
+        encoder = rnn(lstm_units, return_sequences=True)(encoder)
+    else:
+        encoder = rnn(lstm_units, return_sequences=True)(inputs)
     encoder = layers.Dropout(dropout_rate)(encoder)
-    encoder = layers.LSTM(lstm_units, return_sequences=False)(encoder)
+    encoder = rnn(lstm_units, return_sequences=False)(encoder)
     mu = layers.Dense(latent_dim, name="mu")(encoder)
     sigma = layers.Dense(latent_dim, name="sigma")(encoder)
     # Latent space sampling
@@ -89,9 +102,9 @@ def build_multi_track_vae(
     # define decoder model
     decoder_input = layers.Input(shape=(latent_dim,))
     decoder = layers.RepeatVector(n_timesteps)(decoder_input)
-    decoder = layers.LSTM(lstm_units, return_sequences=True)(decoder)
+    decoder = rnn(lstm_units, return_sequences=True)(decoder)
     decoder = layers.Dropout(dropout_rate)(decoder)
-    decoder = layers.LSTM(lstm_units, return_sequences=True)(decoder)
+    decoder = rnn(lstm_units, return_sequences=True)(decoder)
     outputs = [
         layers.TimeDistributed(layers.Dense(n_notes, activation="softmax"))(decoder)
         for _ in range(n_tracks)
@@ -116,16 +129,41 @@ def build_multi_track_vae(
 
 
 class MultiTrackVAE:
-    def __init__(self, lstm_units, embedding_dim, latent_dim, learning_rate, dropout_rate):
+    """A Multi Track LSTM Variational Autoencoder."""
+
+    def __init__(self, lstm_units, embedding_dim, latent_dim, learning_rate, dropout_rate, gru):
         self.lstm_units = lstm_units
         self.n_timesteps, self.n_tracks = (None, None)
         self.optimizer = optimizers.Adam(learning_rate)
         self.embedding_dim = embedding_dim
         self.latent_dim = latent_dim
         self.dropout_rate = dropout_rate
+        self.gru = gru
         self.vae_model, self.encoder_model, self.decoder_model = (None, None, None)
         self.ord_enc = None
         self.rest_code = None
+
+    def load(self, filepath):
+        """Load the model from a Keras saved model path."""
+        self.vae_model = models.load_model(filepath)
+
+        return self
+
+    def load_weights(self, filepath, input_shape, n_notes):
+        """Load the model weights from a Keras saved weights file."""
+        self.vae_model, self.encoder_model, self.decoder_model = build_multi_track_vae(
+            self.optimizer,
+            self.lstm_units,
+            self.latent_dim,
+            self.embedding_dim,
+            self.n_timesteps,
+            self.n_tracks,
+            n_notes,
+            self.dropout_rate,
+            self.gru,
+        )
+        self.vae_model.load_weights(filepath)
+        return self
 
     def train(
         self, x, ticks_per_beat, beats_per_phrase, epochs, batch_size, learning_rate, callbacks=None
@@ -166,6 +204,14 @@ class MultiTrackVAE:
         )
         return self
 
+    def interpolate(self, start, stop, n):
+        """Interpolate n samples from the latent space between two inputs."""
+        space = np.linspace(start, stop, n)
+        axis = space[:, np.newaxis]
+        new_points = self.decoder_model.predict(axis)
+        return new_points
+
     def generate():
         """TODO: write a function to generate MIDI output"""
+
         raise NotImplementedError()

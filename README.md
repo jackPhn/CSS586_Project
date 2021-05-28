@@ -39,3 +39,12 @@ MUSICNET_SAMPLE_RATE=44100
 ```
 
 For a current list of configuration constants, see [musiclearn/config.py](./musiclearn/config.py)
+
+## Remaining TODOs
+
+### MIDI quartet LSTM-VAE model
+
+- [ ] Write code to generate interpolations between two pieces and output as MIDI
+- [ ] Maybe do a conditional VAE, conditioning on composer name?
+- [ ] Run experiments to tune hyperparameters and assess output quality
+- [ ] Implement quantitative music generation quality metrics
