@@ -2,7 +2,9 @@
 Music Variational Autoencoders
 """
 import itertools
+from pathlib import Path
 
+import joblib
 import numpy as np
 import tensorflow as tf
 from musiclearn import processing
@@ -131,17 +133,56 @@ def build_multi_track_vae(
 class MultiTrackVAE:
     """A Multi Track LSTM Variational Autoencoder."""
 
-    def __init__(self, lstm_units, embedding_dim, latent_dim, learning_rate, dropout_rate, gru):
+    def __init__(
+        self,
+        lstm_units,
+        embedding_dim,
+        latent_dim,
+        batch_size,
+        learning_rate,
+        dropout_rate,
+        gru=False,
+    ):
         self.lstm_units = lstm_units
         self.n_timesteps, self.n_tracks = (None, None)
         self.optimizer = optimizers.Adam(learning_rate)
         self.embedding_dim = embedding_dim
         self.latent_dim = latent_dim
         self.dropout_rate = dropout_rate
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
         self.gru = gru
         self.vae_model, self.encoder_model, self.decoder_model = (None, None, None)
         self.ord_enc = None
         self.rest_code = None
+        self.trained_epochs = 0
+
+    def save(self, directory):
+        """Save this model to a directory."""
+        directory = Path(directory)
+        hparams = dict(
+            lstm_units=self.lstm_units,
+            embedding_dim=self.embedding_dim,
+            latent_dim=self.latent_dim,
+            learning_rate=self.learning_rate,
+            dropout_rate=self.dropout_rate,
+            gru=self.gru,
+        )
+        if self.trained_epochs > 0:
+            joblib.dump(self.ord_enc, directory / "ordinal_encoder.joblib")
+            self.vae_model.save(directory / "vae_model")
+            self.encoder_model.save(directory / "encoder_model")
+            self.decoder_model.save(directory / "decoder_model")
+            hparams = dict(
+                n_tracks=self.n_tracks,
+                n_notes=self.n_notes,
+                n_timesteps=self.n_timesteps,
+                batch_size=self.batch_size,
+                learning_rate=self.learning_rate,
+                **hparams
+            )
+        joblib.dump(hparams, directory / "hparams.joblib")
+        return self
 
     def load(self, filepath):
         """Load the model from a Keras saved model path."""
@@ -149,25 +190,7 @@ class MultiTrackVAE:
 
         return self
 
-    def load_weights(self, filepath, input_shape, n_notes):
-        """Load the model weights from a Keras saved weights file."""
-        self.vae_model, self.encoder_model, self.decoder_model = build_multi_track_vae(
-            self.optimizer,
-            self.lstm_units,
-            self.latent_dim,
-            self.embedding_dim,
-            self.n_timesteps,
-            self.n_tracks,
-            n_notes,
-            self.dropout_rate,
-            self.gru,
-        )
-        self.vae_model.load_weights(filepath)
-        return self
-
-    def train(
-        self, x, ticks_per_beat, beats_per_phrase, epochs, batch_size, learning_rate, callbacks=None
-    ):
+    def train(self, x, ticks_per_beat, beats_per_phrase, epochs, callbacks=None):
         """Train the model on a dataset."""
         # Dataset prep, ordinal encoding
         notes = np.unique(x)
@@ -197,12 +220,22 @@ class MultiTrackVAE:
         self.history = self.vae_model.fit(
             x,
             tf.unstack(x, axis=2),
-            batch_size=batch_size,
+            batch_size=self.batch_size,
             epochs=epochs,
             validation_split=0.1,
             callbacks=callbacks,
+            initial_epoch=self.trained_epochs,
         )
+        self.trained_epochs = self.trained_epochs + epochs
         return self
+
+    def reconstruct(self, x, ticks_per_beat, beats_per_phrase):
+        x = self.ord_enc.transform(x).astype(int)
+        x = processing.split_array(
+            x, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
+        )
+        xout = self.vae_model.predict(x)
+        # TODO
 
     def interpolate(self, start, stop, n):
         """Interpolate n samples from the latent space between two inputs."""

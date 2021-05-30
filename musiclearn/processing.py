@@ -293,6 +293,11 @@ def numpy_to_multitrack(x: np.array, programs: List[int], resolution: int, tempo
     return multitrack
 
 
+def midi_to_music21(f):
+    score = converter.parse(f)
+    return score
+
+
 def musicnet_quartets_to_music21(program_ids=None):
     """Get musicnet string quartets in music21 score format"""
     if program_ids is None:
