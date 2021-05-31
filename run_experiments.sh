@@ -8,4 +8,5 @@
 #python musiclearn_cli.py fit-mtvae mtvae_0003 --beats-per-phrase 8 --gru --embedding-dim=32 --patience 50
 #python musiclearn_cli.py fit-mtvae mtvae_0003 --beats-per-phrase 16 --gru --embedding-dim=32 --patience 50
 #python musiclearn_cli.py fit-mtvae mtvae_0003 --beats-per-phrase 16 --gru --embedding-dim=48 --patience 50
-python musiclearn_cli.py fit-mtvae mtvae_0003 --beats-per-phrase 16 --lstm --embedding-dim=48 --patience 50
+#python musiclearn_cli.py fit-mtvae mtvae_0003 --beats-per-phrase 16 --lstm --embedding-dim=48 --patience 50
+python musiclearn_cli.py fit-mtvae mtvae_0004 --beats-per-phrase 16 --lstm-units=256 --embedding-dim=16 --dropout-rate 0.4 --patience 50

@@ -194,6 +194,7 @@ class MultiTrackVAE:
         directory = Path(directory)
         hparams = joblib.load(directory / "hparams.joblib")
         model = cls(**hparams)
+        model.ord_enc = joblib.load(directory / "ordinal_encoder.joblib")
         model.vae_model = models.load_model(directory / "vae_model")
         model.encoder_model = models.load_model(directory / "encoder_model")
         model.decoder_model = models.load_model(directory / "decoder_model")
@@ -204,7 +205,6 @@ class MultiTrackVAE:
         model.batch_size = train_state["batch_size"]
         model.learning_rate = train_state["learning_rate"]
         model.trained_epochs = train_state["trained_epochs"]
-        model.ord_enc = joblib.load(directory / "ordinal_encoder.joblib")
         return model
 
     def train(self, x, ticks_per_beat, beats_per_phrase, epochs, callbacks=None):
@@ -252,7 +252,8 @@ class MultiTrackVAE:
             x, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
         )
         xout = self.vae_model.predict(x)
-        # TODO
+        xout = np.vstack(xout)
+        return xout
 
     def interpolate(self, start, stop, n):
         """Interpolate n samples from the latent space between two inputs."""
