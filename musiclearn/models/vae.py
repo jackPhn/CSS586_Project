@@ -173,22 +173,35 @@ class MultiTrackVAE:
             self.vae_model.save(directory / "vae_model")
             self.encoder_model.save(directory / "encoder_model")
             self.decoder_model.save(directory / "decoder_model")
-            hparams = dict(
+            train_state = dict(
                 n_tracks=self.n_tracks,
                 n_notes=self.n_notes,
                 n_timesteps=self.n_timesteps,
                 batch_size=self.batch_size,
                 learning_rate=self.learning_rate,
-                **hparams
+                trained_epochs=self.trained_epochs,
             )
+            joblib.dump(hparams, directory / "train_state.joblib")
         joblib.dump(hparams, directory / "hparams.joblib")
         return self
 
-    def load(self, filepath):
+    @classmethod
+    def from_saved(cls, directory):
         """Load the model from a Keras saved model path."""
-        self.vae_model = models.load_model(filepath)
-
-        return self
+        directory = Path(directory)
+        hparams = joblib.load(directory / "hparams.joblib")
+        model = cls(hparams)
+        model.vae_model = models.load_model(directory / "vae_model")
+        model.encoder_model = models.load_model(directory / "encoder_model")
+        model.decoder_model = models.load_model(directory / "decoder_model")
+        train_state = joblib.load(directory / "train_state.joblib")
+        model.n_tracks = train_state["n_tracks"]
+        model.n_notes = train_state["n_notes"]
+        model.n_timesteps = train_state["n_timesteps"]
+        model.batch_size = train_state["batch_size"]
+        model.learning_rate = train_state["learning_rate"]
+        model.trained_epochs = train_state["trained_epochs"]
+        return model
 
     def train(self, x, ticks_per_beat, beats_per_phrase, epochs, callbacks=None):
         """Train the model on a dataset."""
