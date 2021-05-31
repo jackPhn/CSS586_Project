@@ -2,6 +2,7 @@
 Music Variational Autoencoders
 """
 import itertools
+import os
 from pathlib import Path
 
 import joblib
@@ -144,7 +145,7 @@ class MultiTrackVAE:
         gru=False,
     ):
         self.lstm_units = lstm_units
-        self.n_timesteps, self.n_tracks = (None, None)
+        self.n_timesteps, self.n_tracks, self.n_notes = (None, None, None)
         self.optimizer = optimizers.Adam(learning_rate)
         self.embedding_dim = embedding_dim
         self.latent_dim = latent_dim
@@ -159,11 +160,13 @@ class MultiTrackVAE:
 
     def save(self, directory):
         """Save this model to a directory."""
+        os.makedirs(directory, exist_ok=True)
         directory = Path(directory)
         hparams = dict(
             lstm_units=self.lstm_units,
             embedding_dim=self.embedding_dim,
             latent_dim=self.latent_dim,
+            batch_size=self.batch_size,
             learning_rate=self.learning_rate,
             dropout_rate=self.dropout_rate,
             gru=self.gru,
@@ -181,7 +184,7 @@ class MultiTrackVAE:
                 learning_rate=self.learning_rate,
                 trained_epochs=self.trained_epochs,
             )
-            joblib.dump(hparams, directory / "train_state.joblib")
+            joblib.dump(train_state, directory / "train_state.joblib")
         joblib.dump(hparams, directory / "hparams.joblib")
         return self
 
@@ -190,24 +193,25 @@ class MultiTrackVAE:
         """Load the model from a Keras saved model path."""
         directory = Path(directory)
         hparams = joblib.load(directory / "hparams.joblib")
-        model = cls(hparams)
+        model = cls(**hparams)
         model.vae_model = models.load_model(directory / "vae_model")
         model.encoder_model = models.load_model(directory / "encoder_model")
         model.decoder_model = models.load_model(directory / "decoder_model")
         train_state = joblib.load(directory / "train_state.joblib")
         model.n_tracks = train_state["n_tracks"]
-        model.n_notes = train_state["n_notes"]
         model.n_timesteps = train_state["n_timesteps"]
+        model.n_notes = train_state["n_notes"]
         model.batch_size = train_state["batch_size"]
         model.learning_rate = train_state["learning_rate"]
         model.trained_epochs = train_state["trained_epochs"]
+        model.ord_enc = joblib.load(directory / "ordinal_encoder.joblib")
         return model
 
     def train(self, x, ticks_per_beat, beats_per_phrase, epochs, callbacks=None):
         """Train the model on a dataset."""
         # Dataset prep, ordinal encoding
         notes = np.unique(x)
-        n_notes = notes.shape[0]
+        self.n_notes = notes.shape[0]
         self.n_tracks = x.shape[1]
         self.ord_enc = OrdinalEncoder(categories=list(itertools.repeat(notes, self.n_tracks)))
         x = self.ord_enc.fit_transform(x).astype(int)
@@ -227,7 +231,7 @@ class MultiTrackVAE:
             self.embedding_dim,
             self.n_timesteps,
             self.n_tracks,
-            n_notes,
+            self.n_notes,
             self.dropout_rate,
         )
         self.history = self.vae_model.fit(
