@@ -137,7 +137,7 @@ def attention_lstm_model(input_shape, n_vocab):
     return model
 
 
-def simplified_wavenet(n_vocab, sequence_length, input_shape):
+def simplified_wavenet(input_shape, n_vocab):
     """ A simplified version of WaveNet without residual and skip connection """
     model = Sequential()
     
@@ -178,8 +178,8 @@ def train_model(model, sequence_length, model_name, epochs=20, batch_size=128):
     network_input, network_output = prepare_sequences(sequence_length, notes)
     
     # train the network
-    #filepath = model_name + "_saved_weights.hdf5"                       # uncomment later
-    filepath = "test_" + model_name + "_saved_weights.hdf5"
+    cwd = os.getcwd()
+    filepath = cwd + "/" + model_name + "_saved_weights.hdf5"
     
     checkpoint_cb = ModelCheckpoint(
         filepath,
