@@ -49,12 +49,6 @@ def lstm_model(input_shape, n_vocab):
     return model
 
 
-def load_lstm_model():
-    """ Load the saved LSTM model """
-    model = tf.keras.models.load_model('lstm_saved_weights.hdf5')
-    return model
-
-
 def bidirectional_lstm_model(input_shape, n_vocab):
     """ Build a bidirectional LSTM model """
     model = Sequential()
@@ -77,13 +71,6 @@ def bidirectional_lstm_model(input_shape, n_vocab):
     
     return model
 
-
-def load_bidirectional_lstm_model():
-    """ Load the saved LSTM model """
-    
-    model = tf.keras.models.load_model('bidirect_lstm_saved_weights.hdf5')
-    
-    return model
 
 
 class Customized_Attention(Layer):
@@ -150,39 +137,7 @@ def attention_lstm_model(input_shape, n_vocab):
     return model
 
 
-def load_attention_lstm_model(input_shape, n_vocab):
-    """ Load the saved weights """
-    #model = tf.keras.models.load_model("attention_lstm_saved_weight.hdf5")
-    
-    model = Sequential()
-    
-    # Bidirectional LSTM layer with attention
-    model.add(Bidirectional(LSTM(512, return_sequences=True), 
-                            input_shape=(input_shape[1], input_shape[2])
-                           )
-             )
-    model.add(Customized_Attention(return_sequences=True))
-    model.add(Dropout(0.3))
-    
-    # Second bidirectional LSTM layer with attention
-    model.add(Bidirectional(LSTM(512, return_sequences=True)))
-    model.add(Customized_Attention(return_sequences=True))
-    model.add(Dropout(0.3))
-    
-    model.add(Bidirectional(LSTM(512)))
-    model.add(Dense(256))
-    model.add(Dropout(0.3))
-    model.add(Dense(n_vocab))
-    model.add(Activation('softmax'))
-    
-    # compile
-    model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop')
-    
-    model.load_weights("attention_lstm_saved_weights.hdf5")
-    return model
-
-
-def simplified_wavenet(n_vocab, sequence_length, input_shape):
+def simplified_wavenet(input_shape, n_vocab):
     """ A simplified version of WaveNet without residual and skip connection """
     model = Sequential()
     
@@ -214,22 +169,17 @@ def simplified_wavenet(n_vocab, sequence_length, input_shape):
     return model
 
 
-def load_wavenet_model():
-    """ Load the saved weights of the WaveNet model """
-    model = tf.keras.models.load_model('wavenet_saved_weights.hdf5')
-    return model
-
-
 def train_model(model, sequence_length, model_name, epochs=20, batch_size=128):
     """ Train a neural network to generate music """
+    # read notes from dataset
     notes = read_midi(schubert_dir)
     
     # get training data
     network_input, network_output = prepare_sequences(sequence_length, notes)
     
     # train the network
-    #filepath = model_name + "_saved_weights.hdf5"                       # uncomment later
-    filepath = "test_" + model_name + "_saved_weights.hdf5"
+    cwd = os.getcwd()
+    filepath = cwd + "/" + model_name + "_saved_weights.hdf5"
     
     checkpoint_cb = ModelCheckpoint(
         filepath,
@@ -254,7 +204,91 @@ def train_model(model, sequence_length, model_name, epochs=20, batch_size=128):
               batch_size=batch_size, 
               callbacks=callback_list,
               validation_split=0.2
+             )    
+
+
+def load_lstm_model(weights_path:str):
+    """ Load the saved LSTM and bidirectional LSTM model """
+    model = tf.keras.models.load_model(weights_path)
+    return model
+
+
+def load_attention_lstm_model(weights_path:str, input_shape, n_vocab):
+    """ Load the saved weights """
+    model = Sequential()
+    
+    # Bidirectional LSTM layer with attention
+    model.add(Bidirectional(LSTM(512, return_sequences=True), 
+                            input_shape=(input_shape[1], input_shape[2])
+                           )
              )
+    model.add(Customized_Attention(return_sequences=True))
+    model.add(Dropout(0.3))
+    
+    # Second bidirectional LSTM layer with attention
+    model.add(Bidirectional(LSTM(512, return_sequences=True)))
+    model.add(Customized_Attention(return_sequences=True))
+    model.add(Dropout(0.3))
+    
+    model.add(Bidirectional(LSTM(512)))
+    model.add(Dense(256))
+    model.add(Dropout(0.3))
+    model.add(Dense(n_vocab))
+    model.add(Activation('softmax'))
+
+    # compile
+    model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop')
+    model.load_weights(weights_path)
+    return model
+
+
+def load_wavenet_model(weights_path:str):
+    """ Load the saved weights of the WaveNet model """
+    model = tf.keras.models.load_model(weight_path)
+    return model
+
+
+def generate_notes(model, network_input, int_to_note, n_vocab, num_notes):
+    """ Generate notes from the neural network based on a sequence of notes """
+    # pick a random sequence from the input as a starting point for the prediction
+    start = np.random.randint(0, len(network_input)-1)
+
+    pattern = network_input[start]
+    prediction_output = []
+
+    # generate 100 notes
+    for note_index in range(num_notes):
+        prediction_input = np.reshape(pattern, (1, len(pattern), 1))
+
+        prediction = model.predict(prediction_input, verbose=0)
+
+        index = np.argmax(prediction)
+        result = int_to_note[index]
+        prediction_output.append(result)
+
+        #pattern.append(index)
+        pattern = np.append(pattern, [index])
+        pattern = pattern[1:]
+
+    return prediction_output
+
+
+def generate_midi_sample(model, data_path, outputFile_name, num_notes):
+    """ Generate a new mid sample """
+    # get notes from dataset
+    notes = read_midi(data_path)
+    
+    network_input, _ = prepare_sequences(SEQUENCE_LENGTH, notes)
+    
+    int_to_note = map_int_to_notes(notes)
+    
+    n_vocab = get_num_unique_notes(notes)
+    
+    # generate a new sequence
+    prediction_output = generate_notes(model, network_input, int_to_note, n_vocab, num_notes)
+    
+    # make midi file
+    create_midi(prediction_output, outputFile_name)
 
 
 def main():
