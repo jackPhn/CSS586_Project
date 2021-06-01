@@ -10,7 +10,7 @@
 \setcopyright{none}
 \renewcommand\footnotetextcopyrightpermission[1]{}
 \pagestyle{plain}
-\title{Musical Deep Learning}
+\title{Modeling the Latent Space of Symbolic String Quartet Music}
 
 %%
 %% The "author" command and its associated commands are used to define
@@ -29,11 +29,14 @@
 }
 
 \begin{abstract}
-  This paper presents a generative model of multi-instrument symbolic
-  music.
+  This paper presents the results of a project to apply a recurrent
+  variational autoencoder to the task of modeling a latent space for
+  generating pieces of multi-instrument symbolic classical music
+  through interpolation.
 \end{abstract}
 
-\keywords{deep learning, neural networks, sequential models, music}
+\keywords{deep learning, recurrent neural networks, sequential models,
+  music modeling, latent space modeling, generative modeling}
 
 \maketitle
 
@@ -42,37 +45,35 @@
 Machine learning models of music have interesting applications in
 music information retrieval and creative tools for musical artists and
 educators. Generative models can create accompaniments for music,
-transfer styles between clips of music, and even generate entirely new
-music. Music is challenging to model because it exhibits a complex
-hierarchy of recurring patterns and long-range temporal dependencies,
-and because both musical scores and performances have multiple
-possible digital representations.
+blend and transfer styles between clips of music, and even generate
+entirely new music. Music is challenging to model because it is
+inherently high-dimensional, exhibiting a complex hierarchy of
+recurring patterns and long-range temporal dependencies, and because
+musical scores have multiple possible digital representations with
+distinct advantages and disadvantages.
 
 Depending on the task, machine learning models of music may be trained
-on the audio signal itself, either in a time domain or a frequency
-domain representation, or they may be trained on a digital symbolic
-representation of music, the most common of which is MIDI (Musical
-Instrument Digital Interface) notation. MIDI is an encoding of music
-as streams of bytes in one or more tracks or channels, each
-representing a sequence of 128 possible pitch values (where 0 is the
-lowest and 127 is the highest), along with timing, pressure and
-instrument identifier values. A music transcription model may
-transcribe an audio signal as a MIDI score, which can easily be
-converted into other symbolic representations such as sheet music for
-human performers to read from, while a synthesizer model can convert
-MIDI representations into audio signals. A generative music model can
-be trained either to generate raw audio, or to produce a symbolic
-score that must be played by a synthesizer or by humans to produce an
-audio music performance. This project focuses on the latter type of
-modeling: generative modeling of symbolic (MIDI) music to compose
-original musical scores.
+on the audio signal of a musical performance, either in a time domain
+or a frequency domain representation, or they may be trained on a
+digital symbolic representation of music, the most common of which is
+MIDI (Musical Instrument Digital Interface) notation. MIDI is an
+encoding of music as streams of bytes in one or more tracks or
+channels, each representing a sequence of 128 possible pitch values
+(where 0 is the lowest pitch and 127 is the highest), along with
+timing, pressure and instrument identifier values. A generative
+symbolic music model can produce a symbolic score in MIDI format,
+which must be played by synthesizer software or by humans to produce
+an audio music performance. This project focuses on generative
+modeling of symbolic (MIDI) music to compose original musical scores
+by blending input scores through continuous latent space interpolation.
 
 \section{Related Work}
 
-The state of the art in music generation has a long way to go before
-it can consistently generate music scores or performances that would
-be enjoyable and popular for humans to listen to, but a number of
-recent research projects have shown promising progress in this area.
+The state of the art in music generation still has a long way to go
+before it can consistently generate music scores or performances that
+would be enjoyable and popular for humans to listen to, but for this
+reason it is an area of significant opportunity, where a number of
+recent research projects have shown promising progress.
 
 Google's \href{https://magenta.tensorflow.org/}{Magenta} is an
 umbrella project for music deep learning research and development of
@@ -152,17 +153,12 @@ raw audio generator \cite{manzelli_conditioning_2018}.
 
 \subsection{Datasets}
 
-Two primary datasets will be used for this research project: MusicNet,
-which is a collection of 330 freely licensed European classical music
-recordings with aligned MIDI scores \cite{thickstun2017learning}, and
-the Lakh MIDI Dataset, which includes a collection of 45,129 Creative
-Commons licensed MIDI files of popular music songs that have been
-matched and aligned to MP3 recordings, and of which we plan to use a
-subset for model training and evaluation
-\cite{raffel_learning-based_2016}. Including this second dataset may
-help to generalize the modeling approach beyond European classical
-music to include other popular genres and associated instruments.
-
+The dataset used for this research project is MusicNet, which is a
+collection of 330 freely licensed European classical music recordings
+with aligned MIDI scores \cite{thickstun2017learning}.  The model is
+trained on 36 string quartets (four-part arrangements with two
+violins, one viola and one cello) by composers Bach, Beethoven,
+Dvorak, Haydn, Mozart, and Ravel.
 
 \subsection{Data Preprocessing}
 
@@ -190,24 +186,39 @@ examples, so we will crop songs into phrases of equal numbers of
 measures to use as training data.
 
 The result of this preprocessing is that each training example will be
-a 3D tensor of shape (tracks x ticks x pitches) and stacking the
-training examples will produce a 4D tensor.
+a 2D matrix of shape (time steps x instrument tracks) and stacking the
+training examples will produce a 3D tensor. Information regarding which
+track corresponds to which musical instrument is lost and therefore
+must be maintained separately to reconstruct the MIDI representation.
 
-While we plan to model music with multiple instrument tracks, we
-anticipate the need to model only a fixed selection of instrument
-parts, similar to how MusicVAE models three-part (drum, bass and
-melody) \cite{roberts_hierarchical_2018} and MuseGAN models five-part
-(drum, bass, guitar, string, piano) arrangements.
+As the model will produce one output per instrument track, it can
+incorporate only a fixed selection of instrument parts, similar to how
+MusicVAE models three-part (drum, bass and melody)
+\cite{roberts_hierarchical_2018} and MuseGAN models five-part (drum,
+bass, guitar, string, piano) arrangements. Therefore this model is
+purpose-built for string quartets, which are the most common type of
+arrangement found in the MusicNet dataset.
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{first_bar.png}
   \caption{Pianoroll visualization of the first measure of
-    Beethoven's Serioso String Quartet}
+    Beethoven's Serioso String Quartet in F Minor}
   \label{pianoroll}
   \Description{A pianoroll representation of cello, viola and violin
     parts from a Beethoven piece.}
 \end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{first_bar_sheet.png}
+  \caption{Sheet music of the first measure of Beethoven's Serioso
+    String Quartet in F Minor}
+  \label{sheet}
+  \Description{A measure of sheet music cello, viola, and violin parts
+    from Beethoven piece.}
+\end{figure}
+
 
 Data augmentation is also possible and we assess its impact on
 the results--the literature suggests augmentation via pitch shifting
@@ -221,6 +232,11 @@ The multi-stream representation discussed in
 imbalance and sparsity in the pianoroll representation.
 
 \subsection{Model Design}
+
+The model is a recurrent variational autoencoder; both Long Short-Term
+Memory (LSTM) and Gated Recurrent Unit (GRU) cell types were tested.
+
+
 
 \subsection{Model Evaluation}
 
