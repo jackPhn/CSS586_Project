@@ -20,8 +20,11 @@ mozart_1788 = midis / "Mozart" / "1788_kv_465_1.mid"
 ticks_per_beat = 4
 beats_per_phrase = 4
 programs = [40, 40, 41, 42]
-bee = processing.score_to_array(processing.midi_to_music21(beethoven_2494), ticks_per_beat)
-moz = processing.score_to_array(processing.midi_to_music21(mozart_1788), ticks_per_beat)
+bee_score = processing.midi_to_music21(beethoven_2494)
+
+bee = processing.score_to_array(bee_score, ticks_per_beat)
+moz_score = processing.midi_to_music21(mozart_1788)
+moz = processing.score_to_array(moz_score, ticks_per_beat)
 
 # %%
 # saved_model_path = "../experiments/mtvae_0009/2021-05-31T20:24:32/saved_model"
@@ -62,27 +65,3 @@ stop = moz
 beemoz = model.interpolate(start, stop, 3, ticks_per_beat, beats_per_phrase)
 beemoz_score = processing.array_to_score(beemoz[1], programs=programs, resolution=ticks_per_beat)
 beemoz_score.write("midi", "../outputs/beemoz_0016.mid")
-
-# %%
-start = model.ord_enc.transform(start).astype(int)
-stop = model.ord_enc.transform(stop).astype(int)
-start = processing.split_array(
-    start, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=model.rest_code
-)
-stop = processing.split_array(
-    stop, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=model.rest_code
-)
-min_len = min(start.shape[0], stop.shape[0])
-start = start[0:min_len, :, :]
-stop = stop[0:min_len, :, :]
-start_mu, start_sigma, start_z = model.encoder_model.predict(start)
-stop_mu, stop_sigma, stop_z = model.encoder_model.predict(stop)
-space = np.linspace(start_z, stop_z, 3)
-interpolations = []
-for x in space:
-    x = model.decoder_model.predict(x)
-    x = np.stack(x, axis=2)
-    x = np.argmax(x, axis=3)
-    x = np.vstack(x)
-    x = model.ord_enc.inverse_transform(x)
-    interpolations.append(x)

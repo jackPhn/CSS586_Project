@@ -5,13 +5,14 @@
 # %%
 import pathlib
 import sys
-import numpy as np
-import note_seq
-import music21
-import pretty_midi
-import pandas as pd
-import pypianoroll
+
 import matplotlib.pyplot as plt
+import music21
+import note_seq
+import numpy as np
+import pandas as pd
+import pretty_midi
+import pypianoroll
 from miditoolkit import midi, pianoroll
 from tensorflow.python.keras.layers.core import RepeatVector
 from tensorflow.python.keras.layers.wrappers import TimeDistributed
@@ -125,9 +126,7 @@ def get_bar_bounds(bar_index, num_bars, beats_per_bar, resolution):
 
 # %%
 def bars(multitrack, start_index, num_bars, beats_per_bar, resolution):
-    start, end = get_bar_bounds(
-        start_index, num_bars, beats_per_bar, resolution
-    )
+    start, end = get_bar_bounds(start_index, num_bars, beats_per_bar, resolution)
     tracks = []
     for track in multitrack.tracks:
         tracks.append(
@@ -151,6 +150,16 @@ first_bar.plot(axes)
 for ax in axes:
     ax.set_ylim(24, 72)
 plt.savefig("../papers/progress/alex/first_bar.png")
+
+# %%
+resolution = 24
+fig, axes = plt.subplots(4, sharex=True, sharey=True)
+first_bar = bars(multitrack, 0, 2, 4, resolution)
+first_bar.plot(axes)
+for ax in axes:
+    ax.set_ylim(24, 72)
+plt.savefig("first_two_bars.png")
+
 
 # %%
 viola_track = first_bar.tracks[2]
