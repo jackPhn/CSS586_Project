@@ -183,6 +183,7 @@ class MultiTrackVAE:
                 batch_size=self.batch_size,
                 learning_rate=self.learning_rate,
                 trained_epochs=self.trained_epochs,
+                rest_code=self.rest_code,
             )
             joblib.dump(train_state, directory / "train_state.joblib")
         joblib.dump(hparams, directory / "hparams.joblib")
@@ -202,6 +203,7 @@ class MultiTrackVAE:
         model.n_tracks = train_state["n_tracks"]
         model.n_timesteps = train_state["n_timesteps"]
         model.n_notes = train_state["n_notes"]
+        model.rest_code = train_state["rest_code"]
         model.batch_size = train_state["batch_size"]
         model.learning_rate = train_state["learning_rate"]
         model.trained_epochs = train_state["trained_epochs"]
@@ -251,9 +253,12 @@ class MultiTrackVAE:
         x = processing.split_array(
             x, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
         )
-        xout = self.vae_model.predict(x)
-        xout = np.vstack(xout)
-        return xout
+        x = self.vae_model.predict(x)
+        x = np.reshape(x, (x.shape[0], x.shape[1], self.n_tracks, self.n_notes))
+        x = np.argmax(x, axis=3)
+        x = np.vstack(x)
+        x = self.ord_enc.inverse_transform(x)
+        return x
 
     def interpolate(self, start, stop, n):
         """Interpolate n samples from the latent space between two inputs."""

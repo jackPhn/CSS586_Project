@@ -6,7 +6,7 @@ import os
 import sys
 from functools import reduce
 from pathlib import Path
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import joblib
 import numpy as np
@@ -436,8 +436,12 @@ def score_to_str_array(score: stream.Score, resolution: int = 12) -> np.array:
     return arr
 
 
-def str_array_to_score(
-    arr: np.array, programs: List[int] = None, resolution: int = 12
+def array_to_score(
+    arr: np.array,
+    programs: List[int] = None,
+    resolution: int = 12,
+    rest: Any = REST,
+    sustain: Any = SUSTAIN,
 ) -> stream.Score:
     """Convert str array back into a score so we can output MIDI.
     Parameters
@@ -459,13 +463,13 @@ def str_array_to_score(
         inst = instrument.instrumentFromMidiProgram(mid_program)
         part.insert(0, inst)
         dfp = df[[p, "offset"]]
-        dfp = dfp[dfp[p] != SUSTAIN_STR]
+        dfp = dfp[dfp[p] != sustain]
         dfp["duration"] = -dfp["offset"].diff(-1)
         dfp["duration"] = dfp["duration"].fillna(0)
         for i, row in dfp.iterrows():
-            if row[p] == REST_STR:  # rest
+            if row[p] == rest:
                 part.append(note.Rest(quarterLength=row["duration"]))
-            elif "." in row[p]:  # chord
+            elif isinstance(row[p], str) and "." in row[p]:  # chord
                 part.append(chord.Chord(str_to_chord(row[p]), quarterLength=row["duration"]))
             else:  # note
                 part.append(note.Note(row[p], quarterLength=row["duration"]))

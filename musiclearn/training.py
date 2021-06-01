@@ -72,7 +72,7 @@ def train_mtvae(
     model_name = type(mtvae).__name__
     start_time = datetime.now()
     start_str = start_time.strftime("%Y-%m-%dT%H:%M:%S")
-    exp_path = Path(f"experiments/{exp_name}/{start_str})")
+    exp_path = Path(f"experiments/{exp_name}/{start_str}")
     cbacks = build_callbacks(exp_path, patience=patience)
     log_start(
         exp_name,
@@ -92,5 +92,5 @@ def train_mtvae(
     mtvae.train(x, ticks_per_beat, beats_per_phrase, epochs, callbacks=cbacks)
     log_end(exp_name, model_name, start_time)
     mtvae.save(exp_path / "saved_model")
-    LOG.info(f"Model configuration saved to {exp_path}")
+    LOG.info(f"Model configuration saved to {exp_path / 'saved_model'}")
     return mtvae
