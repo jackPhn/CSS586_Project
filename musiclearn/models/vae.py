@@ -109,12 +109,12 @@ def build_multi_track_vae(
     decoder = layers.Dropout(dropout_rate)(decoder)
     decoder = rnn(lstm_units, return_sequences=True)(decoder)
     outputs = [
-        layers.TimeDistributed(layers.Dense(n_notes, activation="softmax"))(decoder)
-        for _ in range(n_tracks)
+        layers.TimeDistributed(layers.Dense(n_notes, activation="softmax", name=f"track_{i}"))(
+            decoder
+        )
+        for i in range(n_tracks)
     ]
-    concat_outputs = layers.Concatenate(axis=2)(outputs)
-    decoder_model = keras.Model(decoder_input, concat_outputs)
-
+    decoder_model = keras.Model(decoder_input, outputs)
     # connect encoder and decoder together
     decoder_outputs = decoder_model(z)
     vae_model = keras.Model(inputs=inputs, outputs=decoder_outputs)
@@ -254,7 +254,7 @@ class MultiTrackVAE:
             x, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
         )
         x = self.vae_model.predict(x)
-        x = np.reshape(x, (x.shape[0], x.shape[1], self.n_tracks, self.n_notes))
+        x = np.stack(x, axis=2)
         x = np.argmax(x, axis=3)
         x = np.vstack(x)
         x = self.ord_enc.inverse_transform(x)
@@ -267,7 +267,7 @@ class MultiTrackVAE:
         new_points = self.decoder_model.predict(axis)
         return new_points
 
-    def generate():
+    def generate(self):
         """TODO: write a function to generate MIDI output"""
 
         raise NotImplementedError()
