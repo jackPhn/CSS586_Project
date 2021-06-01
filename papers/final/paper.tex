@@ -41,7 +41,7 @@
   music.
 \end{abstract}
 
-\keywords{deep learning, neural networks, music}
+\keywords{deep learning, neural networks, sequential models, music}
 
 \maketitle
 
@@ -155,6 +155,17 @@ waveform approaches to music modeling, by training an LSTM to learn
 melodic structure of different styles of music, then providing
 generations from this model as conditioning inputs to a WaveNet-based
 raw audio generator \cite{manzelli_conditioning_2018}.
+
+Modelling raw audio waveforms is challenging since a single second in
+modern recording spans thousands of timesteps. Most commonly music is
+recorded at 44.1 kHz (44,100 samples per second). Since a piece of music
+is at least a few seconds in length, capturing long-range dependencies
+is difficult in time domain. A model named MelNet was introduced to address
+this limitation of time-domain models \cite{vasquez2019melnet}. MelNet 
+leverages a two-dimentional time-frequency representation of audio called 
+spectrogram, which reduces the dimentionality of the audio waveforms. This 
+model was able to generate high-fidelity audio samples using structures at 
+long time scales.
 
 \section{Methods}
 
