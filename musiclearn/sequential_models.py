@@ -209,11 +209,11 @@ def train_model(model, sequence_length, model_name, epochs=20, batch_size=128):
 
 def load_lstm_model(weights_path:str):
     """ Load the saved LSTM and bidirectional LSTM model """
-    model = tf.keras.models.load_model(weight_path)
+    model = tf.keras.models.load_model(weights_path)
     return model
 
 
-def load_attention_lstm_model(weight_path:str, input_shape, n_vocab):
+def load_attention_lstm_model(weights_path:str, input_shape, n_vocab):
     """ Load the saved weights """
     model = Sequential()
     
@@ -238,17 +238,17 @@ def load_attention_lstm_model(weight_path:str, input_shape, n_vocab):
 
     # compile
     model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop')
-    model.load_weights("attention_lstm_saved_weights.hdf5")
+    model.load_weights(weights_path)
     return model
 
 
 def load_wavenet_model(weights_path:str):
     """ Load the saved weights of the WaveNet model """
-    model = tf.keras.models.load_model('wavenet_saved_weights.hdf5')
+    model = tf.keras.models.load_model(weight_path)
     return model
 
 
-def generate_notes(model, network_input, int_to_note, n_vocab):
+def generate_notes(model, network_input, int_to_note, n_vocab, num_notes):
     """ Generate notes from the neural network based on a sequence of notes """
     # pick a random sequence from the input as a starting point for the prediction
     start = np.random.randint(0, len(network_input)-1)
@@ -257,7 +257,7 @@ def generate_notes(model, network_input, int_to_note, n_vocab):
     prediction_output = []
 
     # generate 100 notes
-    for note_index in range(100):
+    for note_index in range(num_notes):
         prediction_input = np.reshape(pattern, (1, len(pattern), 1))
 
         prediction = model.predict(prediction_input, verbose=0)
@@ -273,22 +273,22 @@ def generate_notes(model, network_input, int_to_note, n_vocab):
     return prediction_output
 
 
-def generate_mid_sample(model, file_name):
+def generate_midi_sample(model, data_path, outputFile_name, num_notes):
     """ Generate a new mid sample """
     # get notes from dataset
-    notes = read_midi(schubert_dir)
+    notes = read_midi(data_path)
     
     network_input, _ = prepare_sequences(SEQUENCE_LENGTH, notes)
     
-    int_to_note = map_int_to_note(notes)
+    int_to_note = map_int_to_notes(notes)
     
     n_vocab = get_num_unique_notes(notes)
     
     # generate a new sequence
-    prediction_output = generate_notes(model, network_input, int_to_note, n_vocab)
+    prediction_output = generate_notes(model, network_input, int_to_note, n_vocab, num_notes)
     
     # make midi file
-    create_midi(prediction_output, file_name)
+    create_midi(prediction_output, outputFile_name)
 
 
 def main():

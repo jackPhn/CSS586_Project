@@ -141,7 +141,7 @@ def create_midi(notes_list, filename):
 
     midi_stream = stream.Stream(output_notes)
 
-    midi_stream.write('midi', fp=filename)
+    midi_stream.write('midi', fp=filename + '.mid')
  
 
 
