@@ -20,8 +20,9 @@ mozart_1788 = midis / "Mozart" / "1788_kv_465_1.mid"
 ticks_per_beat = 4
 beats_per_phrase = 4
 programs = [40, 40, 41, 42]
-bee_score = processing.midi_to_music21(beethoven_2494)
 
+# %%
+bee_score = processing.midi_to_music21(beethoven_2494)
 bee = processing.score_to_array(bee_score, ticks_per_beat)
 moz_score = processing.midi_to_music21(mozart_1788)
 moz = processing.score_to_array(moz_score, ticks_per_beat)
@@ -60,8 +61,14 @@ moz_reconst_score.write("midi", "../outputs/1788_kv_465_1_reconst_0016.mid")
 # latent codes
 
 # %%
-start = bee
-stop = moz
-beemoz = model.interpolate(start, stop, 3, ticks_per_beat, beats_per_phrase)
-beemoz_score = processing.array_to_score(beemoz[1], programs=programs, resolution=ticks_per_beat)
-beemoz_score.write("midi", "../outputs/beemoz_0016.mid")
+# Get first 8 measures of each
+bee_8 = processing.score_to_array(bee_score.measures(0, 8), ticks_per_beat)
+moz_8 = processing.score_to_array(moz_score.measures(0, 8), ticks_per_beat)
+
+# %%
+start = bee_8
+stop = moz_8
+beemoz = model.interpolate(start, stop, 5, ticks_per_beat, beats_per_phrase)
+for i, score in enumerate(beemoz):
+    beemoz_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
+    beemoz_score.write("midi", f"../outputs/beemoz_8_{i}.mid")

@@ -275,7 +275,7 @@ class MultiTrackVAE:
         stop = stop[0:min_len, :, :]
         start_mu, start_sigma, start_z = self.encoder_model.predict(start)
         stop_mu, stop_sigma, stop_z = self.encoder_model.predict(stop)
-        space = np.linspace(start_z, stop_z, 3)
+        space = np.linspace(start_z, stop_z, n)
         results = []
         for x in space:
             x = self.decoder_model.predict(x)
