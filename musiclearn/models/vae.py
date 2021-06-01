@@ -260,12 +260,31 @@ class MultiTrackVAE:
         x = self.ord_enc.inverse_transform(x)
         return x
 
-    def interpolate(self, start, stop, n):
+    def interpolate(self, start, stop, n, ticks_per_beat, beats_per_phrase):
         """Interpolate n samples from the latent space between two inputs."""
-        space = np.linspace(start, stop, n)
-        axis = space[:, np.newaxis]
-        new_points = self.decoder_model.predict(axis)
-        return new_points
+        start = self.ord_enc.transform(start).astype(int)
+        stop = self.ord_enc.transform(stop).astype(int)
+        start = processing.split_array(
+            start, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
+        )
+        stop = processing.split_array(
+            stop, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
+        )
+        min_len = min(start.shape[0], stop.shape[0])
+        start = start[0:min_len, :, :]
+        stop = stop[0:min_len, :, :]
+        start_mu, start_sigma, start_z = self.encoder_model.predict(start)
+        stop_mu, stop_sigma, stop_z = self.encoder_model.predict(stop)
+        space = np.linspace(start_z, stop_z, 3)
+        results = []
+        for x in space:
+            x = self.decoder_model.predict(x)
+            x = np.stack(x, axis=2)
+            x = np.argmax(x, axis=3)
+            x = np.vstack(x)
+            x = self.ord_enc.inverse_transform(x)
+            results.append(x)
+        return results
 
     def generate(self):
         """TODO: write a function to generate MIDI output"""
