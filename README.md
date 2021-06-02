@@ -44,7 +44,10 @@ For a current list of configuration constants, see [musiclearn/config.py](./musi
 
 ### MIDI quartet LSTM-VAE model
 
-- [ ] Write code to generate interpolations between two pieces and output as MIDI
+- [X] Write code to generate interpolations between two pieces and output as MIDI
+- [ ] Try bidirectional LSTM layers
+- [ ] Experiment with hierarchical "composer" decoder for longer sequences
 - [ ] Maybe do a conditional VAE, conditioning on composer name?
 - [ ] Run experiments to tune hyperparameters and assess output quality
 - [ ] Implement quantitative music generation quality metrics
+- [ ] Clean up codebase for submission

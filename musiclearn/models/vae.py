@@ -80,6 +80,7 @@ def build_multi_track_vae(
     n_notes,
     dropout_rate=0.2,
     gru=False,
+    bidirectional=False,
 ):
     """Build the multi-track LSTM-VAE."""
     # define encoder model
@@ -91,11 +92,20 @@ def build_multi_track_vae(
     if embedding_dim > 0:
         encoder = layers.Embedding(n_notes, embedding_dim, input_length=n_timesteps)(inputs)
         encoder = layers.Reshape((n_timesteps, embedding_dim * n_tracks))(encoder)
-        encoder = rnn(lstm_units, return_sequences=True)(encoder)
+        if bidirectional:
+            encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=True)(encoder))
+        else:
+            encoder = rnn(lstm_units, return_sequences=True)(encoder)
     else:
-        encoder = rnn(lstm_units, return_sequences=True)(inputs)
+        if bidirectional:
+            encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=True)(inputs))
+        else:
+            encoder = rnn(lstm_units, return_sequences=True)(inputs)
     encoder = layers.Dropout(dropout_rate)(encoder)
-    encoder = rnn(lstm_units, return_sequences=False)(encoder)
+    if bidirectional:
+        encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=False)(encoder))
+    else:
+        encoder = rnn(lstm_units, return_sequences=False)(encoder)
     mu = layers.Dense(latent_dim, name="mu")(encoder)
     sigma = layers.Dense(latent_dim, name="sigma")(encoder)
     # Latent space sampling
@@ -143,8 +153,10 @@ class MultiTrackVAE:
         learning_rate,
         dropout_rate,
         gru=False,
+        bidirectional=False,
     ):
         self.lstm_units = lstm_units
+        self.bidirectional = bidirectional
         self.n_timesteps, self.n_tracks, self.n_notes = (None, None, None)
         self.optimizer = optimizers.Adam(learning_rate)
         self.embedding_dim = embedding_dim
@@ -170,6 +182,7 @@ class MultiTrackVAE:
             learning_rate=self.learning_rate,
             dropout_rate=self.dropout_rate,
             gru=self.gru,
+            bidirectional=self.bidirectional,
         )
         if self.trained_epochs > 0:
             joblib.dump(self.ord_enc, directory / "ordinal_encoder.joblib")
