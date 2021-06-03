@@ -61,13 +61,21 @@ def train_mtvae(
     embedding_dim,
     dropout_rate,
     gru,
+    bidirectional,
     patience=10,
 ):
     """"""
     # String quartet MIDI programs
     x = processing.get_string_quartets(ticks_per_beat)
     mtvae = vae.MultiTrackVAE(
-        lstm_units, embedding_dim, latent_dim, batch_size, learning_rate, dropout_rate, gru
+        lstm_units,
+        embedding_dim,
+        latent_dim,
+        batch_size,
+        learning_rate,
+        dropout_rate,
+        gru,
+        bidirectional,
     )
     model_name = type(mtvae).__name__
     start_time = datetime.now()

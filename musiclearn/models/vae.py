@@ -93,17 +93,17 @@ def build_multi_track_vae(
         encoder = layers.Embedding(n_notes, embedding_dim, input_length=n_timesteps)(inputs)
         encoder = layers.Reshape((n_timesteps, embedding_dim * n_tracks))(encoder)
         if bidirectional:
-            encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=True)(encoder))
+            encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=True))(encoder)
         else:
             encoder = rnn(lstm_units, return_sequences=True)(encoder)
     else:
         if bidirectional:
-            encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=True)(inputs))
+            encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=True))(inputs)
         else:
             encoder = rnn(lstm_units, return_sequences=True)(inputs)
     encoder = layers.Dropout(dropout_rate)(encoder)
     if bidirectional:
-        encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=False)(encoder))
+        encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=False))(encoder)
     else:
         encoder = rnn(lstm_units, return_sequences=False)(encoder)
     mu = layers.Dense(latent_dim, name="mu")(encoder)

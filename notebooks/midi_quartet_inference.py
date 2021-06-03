@@ -12,6 +12,9 @@ from musiclearn import config, processing
 from musiclearn.models import vae
 
 # %%
+exp_name = "mtvae_0017"
+
+# %%
 midis = Path(config.MUSICNET_MIDI_DIR)
 beethoven_2494 = midis / "Beethoven" / "2494_qt11_1.mid"
 mozart_1788 = midis / "Mozart" / "1788_kv_465_1.mid"
@@ -19,7 +22,7 @@ mozart_1788 = midis / "Mozart" / "1788_kv_465_1.mid"
 # %%
 ticks_per_beat = 4
 beats_per_phrase = 4
-programs = [40, 40, 41, 42]
+programs = [40, 40, 41, 42]  # Violin x2, Viola, Cello
 
 # %%
 bee_score = processing.midi_to_music21(beethoven_2494)
@@ -31,7 +34,8 @@ moz = processing.score_to_array(moz_score, ticks_per_beat)
 # saved_model_path = "../experiments/mtvae_0009/2021-05-31T20:24:32/saved_model"
 # saved_model_path = "../experiments/mtvae_0013/2021-05-31T22:15:37/saved_model"
 # saved_model_path = "../experiments/mtvae_0015/2021-05-31T22:38:59/saved_model"
-saved_model_path = "../experiments/mtvae_0016/2021-05-31T23:01:43/saved_model"
+# saved_model_path = "../experiments/mtvae_0016/2021-05-31T23:01:43/saved_model"
+saved_model_path = f"../experiments/{exp_name}/2021-06-02T22:55:43/saved_model"
 model = vae.MultiTrackVAE.from_saved(saved_model_path)
 
 # %% [markdown]
@@ -45,14 +49,14 @@ bee_reconst_score = processing.array_to_score(
     bee_reconst, programs=programs, resolution=ticks_per_beat
 )
 
-bee_reconst_score.write("midi", "../outputs/2494_qt11_1_reconst_0016.mid")
+bee_reconst_score.write("midi", f"../outputs/{exp_name}/2494_qt11_1_reconst.mid")
 
 # %%
 moz_reconst = model.reconstruct(moz, ticks_per_beat, beats_per_phrase)
 moz_reconst_score = processing.array_to_score(
     moz_reconst, programs=programs, resolution=ticks_per_beat
 )
-moz_reconst_score.write("midi", "../outputs/1788_kv_465_1_reconst_0016.mid")
+moz_reconst_score.write("midi", f"../outputs/{exp_name}/1788_kv_465_1_reconst.mid")
 
 # %% [markdown]
 # ## Interpolation
@@ -66,9 +70,40 @@ bee_8 = processing.score_to_array(bee_score.measures(0, 8), ticks_per_beat)
 moz_8 = processing.score_to_array(moz_score.measures(0, 8), ticks_per_beat)
 
 # %%
-start = bee_8
-stop = moz_8
-beemoz = model.interpolate(start, stop, 5, ticks_per_beat, beats_per_phrase)
+beemoz = model.interpolate(bee_8, moz_8, 5, ticks_per_beat, beats_per_phrase)
 for i, score in enumerate(beemoz):
     beemoz_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
-    beemoz_score.write("midi", f"../outputs/beemoz_8_{i}.mid")
+    beemoz_score.write("midi", f"../outputs/{exp_name}/beemoz_8_{i}.mid")
+
+# %% [markdown]
+# another example
+
+# %%
+dvorak_1916 = midis / "Dvorak" / "1916_dvq10m1.mid"
+bach_2242 = midis / "Bach" / "2242_vs1_2.mid"
+dvorak_score = processing.midi_to_music21(dvorak_1916)
+bach_score = processing.midi_to_music21(bach_2242)
+dvorak_8 = processing.score_to_array(dvorak_score.measures(0, 8), ticks_per_beat)
+bach_8 = processing.score_to_array(bach_score.measures(0, 8), ticks_per_beat)
+
+# %%
+dvorbach = model.interpolate(dvorak_8, bach_8, 5, ticks_per_beat, beats_per_phrase)
+for i, score in enumerate(dvorbach):
+    dvorbach_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
+    dvorbach_score.write("midi", f"../outputs/{exp_name}/dvorbach_8_{i}.mid")
+
+# %% [markdown]
+# another example: Haydn and Ravel
+
+haydn_2104 = midis / "Haydn" / "2104_op64n5_1.mid"
+ravel_2179 = midis / "Ravel" / "2179_gr_rqtf3.mid"
+haydn_score = processing.midi_to_music21(haydn_2104)
+ravel_score = processing.midi_to_music21(ravel_2179)
+haydn_8 = processing.score_to_array(haydn_score.measures(0, 8), ticks_per_beat)
+ravel_8 = processing.score_to_array(ravel_score.measures(0, 8), ticks_per_beat)
+
+# %%
+hayvel = model.interpolate(haydn_8, ravel_8, 5, ticks_per_beat, beats_per_phrase)
+for i, score in enumerate(hayvel):
+    hayvel_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
+    hayvel_score.write("midi", f"../outputs/{exp_name}/hayvel_8_{i}.mid")
