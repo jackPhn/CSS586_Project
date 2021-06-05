@@ -9,7 +9,8 @@ import click
 import numpy as np
 from tensorflow.random import set_seed
 
-from musiclearn import sequential_models, single_note_processing, training
+from musiclearn import (plotting, sequential_models, single_note_processing,
+                        training)
 
 LOG = logging.getLogger("musiclearn")
 LOG.setLevel(logging.DEBUG)
@@ -153,6 +154,14 @@ def generate_music(output_name, data_path, model_type, weights_path, num_notes):
     sequential_models.generate_midi_sample(model, data_path, output_name, num_notes)
 
 
+@click.command()
+@click.argument("historyfile", type=click.Path(exists=True))
+@click.argument("outputfile", type=click.Path())
+def plot_losses(historyfile, outputfile):
+    """Plot model training & validation loss curves from HISTORYFILE and save to OUTPUTFILE."""
+    plotting.plot_learning_curves(historyfile, outputfile)
+
+
 @click.group()
 def cli():
     """Command line interface for the musiclearn project"""
@@ -163,6 +172,7 @@ def main():
     cli.add_command(fit_mtvae)
     cli.add_command(fit_sequential)
     cli.add_command(generate_music)
+    cli.add_command(plot_losses)
     cli()
 
 
