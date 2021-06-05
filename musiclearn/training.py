@@ -9,8 +9,7 @@ from pathlib import Path
 
 from tensorflow.keras import callbacks
 
-from musiclearn import processing
-from musiclearn.models import vae
+from musiclearn import processing, vae_models
 
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.DEBUG)
@@ -67,7 +66,7 @@ def train_mtvae(
     """"""
     # String quartet MIDI programs
     x = processing.get_string_quartets(ticks_per_beat)
-    mtvae = vae.MultiTrackVAE(
+    mtvae = vae_models.MultiTrackVAE(
         lstm_units,
         embedding_dim,
         latent_dim,

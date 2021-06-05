@@ -1,4 +1,7 @@
-"""Command line interface for the musiclearn project."""
+"""musiclearn_cli.py
+Command line interface for the musiclearn project.
+Authors: Alex Kyllo and Jack Phan
+"""
 import logging
 import random
 
@@ -6,7 +9,7 @@ import click
 import numpy as np
 from tensorflow.random import set_seed
 
-from musiclearn import training
+from musiclearn import sequential_models, single_note_processing, training
 
 LOG = logging.getLogger("musiclearn")
 LOG.setLevel(logging.DEBUG)
@@ -61,7 +64,8 @@ def fit_mtvae(
     bidirectional,
     patience,
 ):
-    """Run MultiTrackVAE experiment named EXP_NAME with hyperparameter options."""
+    """Run MultiTrackVAE experiment named EXP_NAME with hyperparameter options.
+    Author: Alex Kyllo"""
     training.train_mtvae(
         exp_name,
         ticks_per_beat,
@@ -79,6 +83,76 @@ def fit_mtvae(
     )
 
 
+@click.command()
+@click.option(
+    "--model-type",
+    type=click.Choice(["lstm", "bidirect", "att", "wavenet"], case_sensitive=False),
+    help="Type of model",
+)
+@click.option("--data-path", type=click.STRING, help="Path to folder stores dataset")
+@click.option("--logs-dir", type=click.STRING, help="Folder that stores training logs")
+@click.option(
+    "--sequence_length",
+    type=click.INT,
+    default=100,
+    help="Length of the sequences of notes used in training",
+)
+def fit_sequential(model_type, data_path, logs_dir, sequence_length):
+    """Fit a sequential model of choice on the specified dataset.
+    Author: Jack Phan"""
+    notes = single_note_processing.read_midi(data_path)
+
+    n_vocab = single_note_processing.get_num_unique_notes(notes)
+
+    network_input, network_output = single_note_processing.prepare_sequences(sequence_length, notes)
+
+    if model_type == "lstm":
+        model = sequential_models.lstm_model(network_input.shape, n_vocab)
+    elif model_type == "bidirect":
+        model = sequential_models.bidirectional_lstm_model(network_input.shape, n_vocab)
+    elif model_type == "att":
+        model = sequential_models.attention_lstm_model(network_input.shape, n_vocab)
+    elif model_type == "wavenet":
+        model = sequential_models.simplified_wavenet(network_input.shape, n_vocab)
+    else:
+        raise ValueError("Invalid model type")
+
+    sequential_models.train_model(model, sequence_length, model_type, 10, 64)
+
+
+@click.command()
+@click.argument("output-name", type=click.STRING)
+@click.option("--data-path", type=click.STRING, help="Path to folder stores dataset")
+@click.option(
+    "--model-type",
+    type=click.Choice(["lstm", "bidirect", "att", "wavenet"], case_sensitive=False),
+    help="Type of model",
+)
+@click.option("--weights-path", type=click.STRING, help="Path to saved weights of the model")
+@click.option("--num-notes", type=click.INT, help="Number of notes to generate")
+def generate_music(output_name, data_path, model_type, weights_path, num_notes):
+    """Generate a short piece of music with a fixed number of notes.
+    Author: Jack Phan"""
+    # load the model
+    notes = single_note_processing.read_midi(data_path)
+    n_vocab = single_note_processing.get_num_unique_notes(notes)
+    network_input, _ = single_note_processing.prepare_sequences(
+        sequential_models.SEQUENCE_LENGTH, notes
+    )
+    if model_type == "lstm" or model_type == "bidirect":
+        model = sequential_models.load_lstm_model(weights_path)
+    elif model_type == "att":
+        model = sequential_models.load_attention_lstm_model(
+            weights_path, network_input.shape, n_vocab
+        )
+    elif model_type == "wavenet":
+        model = sequential_models.load_wavenet_model(weights_path)
+    else:
+        raise ValueError("Invalid model type")
+
+    sequential_models.generate_midi_sample(model, data_path, output_name, num_notes)
+
+
 @click.group()
 def cli():
     """Command line interface for the musiclearn project"""
@@ -87,6 +161,8 @@ def cli():
 def main():
     """"""
     cli.add_command(fit_mtvae)
+    cli.add_command(fit_sequential)
+    cli.add_command(generate_music)
     cli()
 
 

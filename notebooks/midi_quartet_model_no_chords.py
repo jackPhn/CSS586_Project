@@ -24,8 +24,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras import layers, losses, metrics, optimizers, utils
 
 sys.path.append("..")
-from musiclearn import processing
-from musiclearn.models import vae
+from musiclearn import processing, vae_models
 
 # %%
 physical_devices = tf.config.list_physical_devices("GPU")
@@ -92,7 +91,7 @@ embedding_dim = 8
 opt = optimizers.Adam(learning_rate=0.0002)
 
 # %%
-lstm_vae, encoder, decoder = vae.build_one_track_vae(
+lstm_vae, encoder, decoder = vae_models.build_one_track_vae(
     opt, latent_dim, embedding_dim, n_timesteps, n_notes, dropout_rate=0.2
 )
 history = lstm_vae.fit(x_0, x_0, batch_size=32, epochs=500, validation_split=0.1)
@@ -105,14 +104,8 @@ pred_0
 
 # %% [markdown]
 # Variational LSTM-AE (four track)
-mtvae, mencoder, mdecoder = vae.build_multi_track_vae(
+mtvae, mencoder, mdecoder = vae_models.build_multi_track_vae(
     opt, lstm_units, latent_dim, embedding_dim, n_timesteps, n_features, n_notes, dropout_rate=0.2
 )
 mhistory = mtvae.fit(x, tf.unstack(x, axis=2), batch_size=32, epochs=100, validation_split=0.1)
 mtvae.save_weights("mtvae.hdf5")
-# %% [markdown]
-#
-# - [] TODO: try one-hot encoding instead?
-# - [] TODO: Try higher dimension embedding?
-# - [X] TODO: Try Higher latent dimension
-# - [X] TODO: Implement VAE for multi-track

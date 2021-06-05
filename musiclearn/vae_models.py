@@ -1,5 +1,6 @@
-"""models/vae.py
-Music Variational Autoencoders
+"""vae_models.py
+Music LSTM Variational Autoencoder models
+Author: Alex Kyllo
 """
 import itertools
 import os
@@ -8,14 +9,16 @@ from pathlib import Path
 import joblib
 import numpy as np
 import tensorflow as tf
-from musiclearn import processing
 from sklearn.preprocessing import OrdinalEncoder
 from tensorflow import keras
 from tensorflow.keras import backend as K
 from tensorflow.keras import layers, models, optimizers
 
+from musiclearn import processing
+
 
 def sample_normal(inputs):
+    """Draw a sample from a multidimensional Gaussian distribution."""
     mu, sigma = inputs
     batch = K.shape(mu)[0]
     dim = K.int_shape(mu)[1]
@@ -32,7 +35,7 @@ def build_one_track_vae(
     n_notes,
     dropout_rate=0.2,
 ):
-    """Build the one-track LSTM-VAE"""
+    """Build a one-track LSTM-VAE Keras model for autoencoding monophonic music."""
     # define encoder model
     inputs = layers.Input(shape=(n_timesteps, 1))
     encoder = layers.Embedding(n_notes, embedding_dim, input_length=n_timesteps)(inputs)
@@ -82,7 +85,7 @@ def build_multi_track_vae(
     gru=False,
     bidirectional=False,
 ):
-    """Build the multi-track LSTM-VAE."""
+    """Build a multi-track LSTM-VAE Keras model for autoencoding polyphonic music."""
     # define encoder model
     inputs = layers.Input(shape=(n_timesteps, n_tracks))
     if gru:
@@ -262,6 +265,7 @@ class MultiTrackVAE:
         return self
 
     def reconstruct(self, x, ticks_per_beat, beats_per_phrase):
+        """Reconstruct an input phrase through the autoencoder."""
         x = self.ord_enc.transform(x).astype(int)
         x = processing.split_array(
             x, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
@@ -274,7 +278,7 @@ class MultiTrackVAE:
         return x
 
     def interpolate(self, start, stop, n, ticks_per_beat, beats_per_phrase):
-        """Interpolate n samples from the latent space between two inputs."""
+        """Interpolate n samples from the latent space between two input phrases."""
         start = self.ord_enc.transform(start).astype(int)
         stop = self.ord_enc.transform(stop).astype(int)
         start = processing.split_array(
@@ -298,8 +302,3 @@ class MultiTrackVAE:
             x = self.ord_enc.inverse_transform(x)
             results.append(x)
         return results
-
-    def generate(self):
-        """TODO: write a function to generate MIDI output"""
-
-        raise NotImplementedError()

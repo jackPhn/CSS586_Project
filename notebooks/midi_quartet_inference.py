@@ -8,11 +8,7 @@ from pathlib import Path
 
 sys.path.append("..")
 import numpy as np
-from musiclearn import config, processing
-from musiclearn.models import vae
-
-# %%
-exp_name = "mtvae_0017"
+from musiclearn import config, processing, vae_models
 
 # %%
 midis = Path(config.MUSICNET_MIDI_DIR)
@@ -31,12 +27,10 @@ moz_score = processing.midi_to_music21(mozart_1788)
 moz = processing.score_to_array(moz_score, ticks_per_beat)
 
 # %%
-# saved_model_path = "../experiments/mtvae_0009/2021-05-31T20:24:32/saved_model"
-# saved_model_path = "../experiments/mtvae_0013/2021-05-31T22:15:37/saved_model"
-# saved_model_path = "../experiments/mtvae_0015/2021-05-31T22:38:59/saved_model"
-# saved_model_path = "../experiments/mtvae_0016/2021-05-31T23:01:43/saved_model"
-saved_model_path = f"../experiments/{exp_name}/2021-06-02T22:55:43/saved_model"
-model = vae.MultiTrackVAE.from_saved(saved_model_path)
+exp_name = "mtvae_0016"
+exp_time = "2021-05-31T23:01:43"
+saved_model_path = f"../experiments/{exp_name}/{exp_time}/saved_model"
+model = vae_models.MultiTrackVAE.from_saved(saved_model_path)
 
 # %% [markdown]
 # ## Reconstruction
@@ -74,9 +68,10 @@ beemoz = model.interpolate(bee_8, moz_8, 5, ticks_per_beat, beats_per_phrase)
 for i, score in enumerate(beemoz):
     beemoz_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
     beemoz_score.write("midi", f"../outputs/{exp_name}/beemoz_8_{i}.mid")
+    beemoz_score.write("musicxml", f"../outputs/{exp_name}/beemoz_8_{i}.xml")
 
 # %% [markdown]
-# another example
+# another example: Dvorak and Bach
 
 # %%
 dvorak_1916 = midis / "Dvorak" / "1916_dvq10m1.mid"
@@ -93,6 +88,25 @@ for i, score in enumerate(dvorbach):
     dvorbach_score.write("midi", f"../outputs/{exp_name}/dvorbach_8_{i}.mid")
 
 # %% [markdown]
+# another example: Beethoven and Bach
+
+# %%
+beebach = model.interpolate(bee_8, bach_8, 5, ticks_per_beat, beats_per_phrase)
+for i, score in enumerate(beebach):
+    beebach_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
+    beebach_score.write("midi", f"../outputs/{exp_name}/beebach_8_{i}.mid")
+
+# %% [markdown]
+# another example: Beethoven and Dvorak
+
+# %%
+beedvor = model.interpolate(bee_8, dvorak_8, 5, ticks_per_beat, beats_per_phrase)
+for i, score in enumerate(beedvor):
+    beedvor_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
+    beedvor_score.write("midi", f"../outputs/{exp_name}/beedvor_8_{i}.mid")
+
+
+# %% [markdown]
 # another example: Haydn and Ravel
 
 haydn_2104 = midis / "Haydn" / "2104_op64n5_1.mid"
@@ -107,3 +121,12 @@ hayvel = model.interpolate(haydn_8, ravel_8, 5, ticks_per_beat, beats_per_phrase
 for i, score in enumerate(hayvel):
     hayvel_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
     hayvel_score.write("midi", f"../outputs/{exp_name}/hayvel_8_{i}.mid")
+
+# %% [markdown]
+# another example: Beethoven and Haydn
+
+# %%
+beedyn = model.interpolate(bee_8, haydn_8, 5, ticks_per_beat, beats_per_phrase)
+for i, score in enumerate(beedyn):
+    beedyn_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
+    beedyn_score.write("midi", f"../outputs/{exp_name}/beedyn_8_{i}.mid")
