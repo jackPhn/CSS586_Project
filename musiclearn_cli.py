@@ -92,7 +92,7 @@ def fit_mtvae(
 @click.argument("output_dir", type=click.Path())
 @click.option("--n", type=click.INT, default=3)
 def interpolate(model_path, midi_1, midi_2, output_dir, n):
-    """Use MODEL_PATH to interpolate n"""
+    """Use MODEL_PATH to interpolate n points between MIDI_1 and MIDI_2."""
     programs = [40, 40, 41, 42]  # violin x2, viola, cello
     model = vae_models.MultiTrackVAE.from_saved(model_path)
     scores = [processing.midi_to_music21(f) for f in [midi_1, midi_2]]
@@ -102,6 +102,9 @@ def interpolate(model_path, midi_1, midi_2, output_dir, n):
         processing.array_to_score(arr, programs=programs, resolution=model.ticks_per_beat)
         for arr in output_arrays
     ]
+    LOG.info(
+        f"Generating {n} interpolations between {midi_1} and {midi_2} and saving to {output_dir}..."
+    )
     for i, score in enumerate(output_scores):
         score.write("midi", Path(output_dir) / f"interpolation_{i}.mid")
 
@@ -192,6 +195,7 @@ def cli():
 def main():
     """"""
     cli.add_command(fit_mtvae)
+    cli.add_command(interpolate)
     cli.add_command(fit_sequential)
     cli.add_command(generate_music)
     cli.add_command(plot_losses)

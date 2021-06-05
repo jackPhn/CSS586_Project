@@ -170,26 +170,41 @@ objects, such as pretty\_midi \cite{raffel_pretty_midi_2014},
 Pypianoroll \cite{dong_pypianoroll_2018} and music21
 \cite{cuthbert_music21_2010}.
 
-In order to accommodate polyphonic music, we convert each MIDI file
-into a pianoroll representation, as visualized in Figure
-\ref{pianoroll}, wherein each instrument track is a sparse matrix that
-multi-hot encodes the velocity values for each of 128 possible pitch
-levels at each timestep. To reduce dimensionality, I will clip the
-note pitch values to a narrower range, excluding the rarely used notes
-in the extreme high and low octaves, and encode chords (combinations
-of notes played simultaneously on the same instrument) as distinct
-tokens, so that they can be one-hot encoded
+In order to accommodate polyphonic music, we each MIDI file is
+converted into a modified pianoroll representation, an example of
+which is visualized in Figure \ref{pianoroll}. In this modified
+representation, each instrument track is a sequence of integers from
+0-129 representing the MIDI note pitch value being played at the given
+time step, where values 0-127 are pitches, 128 is a rest (silence) and
+129 is sustain, indicating that the previously played pitch is held
+continuously. Because chords (multiple notes being played
+simultaneously by the same instrument) are relatively rare in string
+quartets, the lowest note of each chord is taken and the rest
+discarded, to reduce dimensionality. Because notes at the extreme low
+and high end are rare and are out of range of common instruments, the
+note pitch values are clipped to a narrower range and ordinal
+encoded. For the 36 string quartets found in the MusicNet database,
+this results in 66 distinct values, where 0-63 represent notes played
+by the violins, viola and cello, 64 is rest and 65 is sustain. Our
+software package also includes functions to convert this
+representation back into a Music21 Score object, which can then be
+written to a MIDI file.
 
 Because songs are typically at least a few minutes long and of varying
 length, it will not be feasible to train with entire songs as
 examples, so we will crop songs into phrases of equal numbers of
 measures to use as training data.
 
-The result of this preprocessing is that each training example will be
-a 2D matrix of shape (time steps x instrument tracks) and stacking the
-training examples will produce a 3D tensor. Information regarding which
+The result of this preprocessing is that each training example isbe a
+2D matrix of shape (time steps x instrument tracks) and stacking the
+training examples produces a 3D tensor. Information regarding which
 track corresponds to which musical instrument is lost and therefore
-must be maintained separately to reconstruct the MIDI representation.
+must be maintained separately to reconstruct the MIDI
+representation. For string quartets this instrument ensemble is always
+\texttt{[40, 40, 41, 42]}, which is an array of MIDI instrument codes
+representing two violins, one viola and one cello. Tempo information
+is also lost from this representation, so the outputs are normalized
+to the default tempo of 120 beats per minute.
 
 As the model will produce one output per instrument track, it can
 incorporate only a fixed selection of instrument parts, similar to how
@@ -236,7 +251,18 @@ imbalance and sparsity in the pianoroll representation.
 The model is a recurrent variational autoencoder; both Long Short-Term
 Memory (LSTM) and Gated Recurrent Unit (GRU) cell types were tested.
 
+The encoder model utilizes an embedding layer to encode the note pitch
+integers as vectors; embedding vector length is a tunable
+hyperparameter and we found the best results with it set to 8. Then
+two LSTM layers, with a dropout layer in between, convert the
+sequences into latent codes, which are modeled as a multidimensional
+Gaussian distribution.
 
+The decoder model samples from the latent space $z$ with the
+distribution parameterized by the $\mu$ and $log(\sigma)$ values
+learned by the encoder.
+
+TODO: model architecture plots
 
 \subsection{Model Evaluation}
 
