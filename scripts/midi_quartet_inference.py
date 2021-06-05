@@ -1,13 +1,13 @@
 # %% [markdown]
-# # Quartet model generation and interpolation
+# # String quartet MTVAE model for interpolation
+#
+# Author: Alex Kyllo
 
 # %%
-import os
 import sys
 from pathlib import Path
 
 sys.path.append("..")
-import numpy as np
 from musiclearn import config, processing, vae_models
 
 # %%
@@ -64,7 +64,7 @@ bee_8 = processing.score_to_array(bee_score.measures(0, 8), ticks_per_beat)
 moz_8 = processing.score_to_array(moz_score.measures(0, 8), ticks_per_beat)
 
 # %%
-beemoz = model.interpolate(bee_8, moz_8, 5, ticks_per_beat, beats_per_phrase)
+beemoz = model.interpolate(bee_8, moz_8, 5)
 for i, score in enumerate(beemoz):
     beemoz_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
     beemoz_score.write("midi", f"../outputs/{exp_name}/beemoz_8_{i}.mid")
@@ -82,7 +82,7 @@ dvorak_8 = processing.score_to_array(dvorak_score.measures(0, 8), ticks_per_beat
 bach_8 = processing.score_to_array(bach_score.measures(0, 8), ticks_per_beat)
 
 # %%
-dvorbach = model.interpolate(dvorak_8, bach_8, 5, ticks_per_beat, beats_per_phrase)
+dvorbach = model.interpolate(dvorak_8, bach_8, 5)
 for i, score in enumerate(dvorbach):
     dvorbach_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
     dvorbach_score.write("midi", f"../outputs/{exp_name}/dvorbach_8_{i}.mid")
@@ -91,7 +91,7 @@ for i, score in enumerate(dvorbach):
 # another example: Beethoven and Bach
 
 # %%
-beebach = model.interpolate(bee_8, bach_8, 5, ticks_per_beat, beats_per_phrase)
+beebach = model.interpolate(bee_8, bach_8, 5)
 for i, score in enumerate(beebach):
     beebach_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
     beebach_score.write("midi", f"../outputs/{exp_name}/beebach_8_{i}.mid")
@@ -100,7 +100,7 @@ for i, score in enumerate(beebach):
 # another example: Beethoven and Dvorak
 
 # %%
-beedvor = model.interpolate(bee_8, dvorak_8, 5, ticks_per_beat, beats_per_phrase)
+beedvor = model.interpolate(bee_8, dvorak_8, 5)
 for i, score in enumerate(beedvor):
     beedvor_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
     beedvor_score.write("midi", f"../outputs/{exp_name}/beedvor_8_{i}.mid")
@@ -117,7 +117,7 @@ haydn_8 = processing.score_to_array(haydn_score.measures(0, 8), ticks_per_beat)
 ravel_8 = processing.score_to_array(ravel_score.measures(0, 8), ticks_per_beat)
 
 # %%
-hayvel = model.interpolate(haydn_8, ravel_8, 5, ticks_per_beat, beats_per_phrase)
+hayvel = model.interpolate(haydn_8, ravel_8, 5)
 for i, score in enumerate(hayvel):
     hayvel_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
     hayvel_score.write("midi", f"../outputs/{exp_name}/hayvel_8_{i}.mid")
@@ -126,7 +126,7 @@ for i, score in enumerate(hayvel):
 # another example: Beethoven and Haydn
 
 # %%
-beedyn = model.interpolate(bee_8, haydn_8, 5, ticks_per_beat, beats_per_phrase)
+beedyn = model.interpolate(bee_8, haydn_8, 5)
 for i, score in enumerate(beedyn):
     beedyn_score = processing.array_to_score(score, programs=programs, resolution=ticks_per_beat)
     beedyn_score.write("midi", f"../outputs/{exp_name}/beedyn_8_{i}.mid")

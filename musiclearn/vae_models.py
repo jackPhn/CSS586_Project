@@ -161,6 +161,7 @@ class MultiTrackVAE:
         self.lstm_units = lstm_units
         self.bidirectional = bidirectional
         self.n_timesteps, self.n_tracks, self.n_notes = (None, None, None)
+        self.ticks_per_beat, self.beats_per_phrase = (None, None)
         self.optimizer = optimizers.Adam(learning_rate)
         self.embedding_dim = embedding_dim
         self.latent_dim = latent_dim
@@ -200,6 +201,8 @@ class MultiTrackVAE:
                 learning_rate=self.learning_rate,
                 trained_epochs=self.trained_epochs,
                 rest_code=self.rest_code,
+                ticks_per_beat=self.ticks_per_beat,
+                beats_per_phrase=self.beats_per_phrase,
             )
             joblib.dump(train_state, directory / "train_state.joblib")
         joblib.dump(hparams, directory / "hparams.joblib")
@@ -223,11 +226,15 @@ class MultiTrackVAE:
         model.batch_size = train_state["batch_size"]
         model.learning_rate = train_state["learning_rate"]
         model.trained_epochs = train_state["trained_epochs"]
+        model.ticks_per_beat = train_state.get("ticks_per_beat", 4)
+        model.beats_per_phrase = train_state.get("beats_per_phrase", 4)
         return model
 
     def train(self, x, ticks_per_beat, beats_per_phrase, epochs, callbacks=None):
         """Train the model on a dataset."""
         # Dataset prep, ordinal encoding
+        self.ticks_per_beat = ticks_per_beat
+        self.beats_per_phrase = beats_per_phrase
         notes = np.unique(x)
         self.n_notes = notes.shape[0]
         self.n_tracks = x.shape[1]
@@ -277,15 +284,21 @@ class MultiTrackVAE:
         x = self.ord_enc.inverse_transform(x)
         return x
 
-    def interpolate(self, start, stop, n, ticks_per_beat, beats_per_phrase):
+    def interpolate(self, start, stop, n):
         """Interpolate n samples from the latent space between two input phrases."""
         start = self.ord_enc.transform(start).astype(int)
         stop = self.ord_enc.transform(stop).astype(int)
         start = processing.split_array(
-            start, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
+            start,
+            beats_per_phrase=self.beats_per_phrase,
+            resolution=self.ticks_per_beat,
+            fill=self.rest_code,
         )
         stop = processing.split_array(
-            stop, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
+            stop,
+            beats_per_phrase=self.beats_per_phrase,
+            resolution=self.ticks_per_beat,
+            fill=self.rest_code,
         )
         min_len = min(start.shape[0], stop.shape[0])
         start = start[0:min_len, :, :]

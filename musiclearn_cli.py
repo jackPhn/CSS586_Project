@@ -4,13 +4,14 @@ Authors: Alex Kyllo and Jack Phan
 """
 import logging
 import random
+from pathlib import Path
 
 import click
 import numpy as np
 from tensorflow.random import set_seed
 
-from musiclearn import (plotting, sequential_models, single_note_processing,
-                        training)
+from musiclearn import (plotting, processing, sequential_models,
+                        single_note_processing, training, vae_models)
 
 LOG = logging.getLogger("musiclearn")
 LOG.setLevel(logging.DEBUG)
@@ -85,6 +86,27 @@ def fit_mtvae(
 
 
 @click.command()
+@click.argument("model_path", type=click.Path(exists=True))
+@click.argument("midi_1", type=click.Path(exists=True))
+@click.argument("midi_2", type=click.Path(exists=True))
+@click.argument("output_dir", type=click.Path())
+@click.option("--n", type=click.INT, default=3)
+def interpolate(model_path, midi_1, midi_2, output_dir, n):
+    """Use MODEL_PATH to interpolate n"""
+    programs = [40, 40, 41, 42]  # violin x2, viola, cello
+    model = vae_models.MultiTrackVAE.from_saved(model_path)
+    scores = [processing.midi_to_music21(f) for f in [midi_1, midi_2]]
+    arrays = [processing.score_to_array(sc, model.ticks_per_beat) for sc in scores]
+    output_arrays = model.interpolate(arrays[0], arrays[1], n)
+    output_scores = [
+        processing.array_to_score(arr, programs=programs, resolution=model.ticks_per_beat)
+        for arr in output_arrays
+    ]
+    for i, score in enumerate(output_scores):
+        score.write("midi", Path(output_dir) / f"interpolation_{i}.mid")
+
+
+@click.command()
 @click.option(
     "--model-type",
     type=click.Choice(["lstm", "bidirect", "att", "wavenet"], case_sensitive=False),
@@ -155,11 +177,11 @@ def generate_music(output_name, data_path, model_type, weights_path, num_notes):
 
 
 @click.command()
-@click.argument("historyfile", type=click.Path(exists=True))
-@click.argument("outputfile", type=click.Path())
-def plot_losses(historyfile, outputfile):
-    """Plot model training & validation loss curves from HISTORYFILE and save to OUTPUTFILE."""
-    plotting.plot_learning_curves(historyfile, outputfile)
+@click.argument("history_file", type=click.Path(exists=True))
+@click.argument("output_file", type=click.Path())
+def plot_losses(history_file, output_file):
+    """Plot model training & validation loss curves from HISTORY_FILE and save to OUTPUT_FILE."""
+    plotting.plot_learning_curves(history_file, output_file)
 
 
 @click.group()
