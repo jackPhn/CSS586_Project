@@ -24,25 +24,29 @@ To activate the conda virtual environment:
 conda activate musiclearn
 ```
 
+## Data
+
+This project uses the MusicNet reference MIDI files, which can be downloaded here:
+[musicnet_midis.tar.gz](https://homes.cs.washington.edu/~thickstn/media/musicnet_midis.tar.gz)
+
 Data file paths and other constants should be specified in a `.env` file in the
 project root (this directory). The
 [python-dotenv](https://pypi.org/project/python-dotenv/) package is used to read
 these into shell environment variables.
 
-Here's my .env file, yours will have different directory paths depending where
-you placed your music data.
+You will need to create your own .env file. Below are the contents of
+my .env file, yours will have different directory paths depending
+where you placed the downloaded music data. Download and unzip the
+musicnet_midis file and add `MUSICNET_MIDI_DIR=<path to musicnet_midis directory>`
+to the .env file, like this:
 
 ```
-MUSICNET_DIR=/media/hdd1/data/school/css586/musicnet
 MUSICNET_MIDI_DIR=/media/hdd1/data/school/css586/musicnet_midis
-MUSICNET_SAMPLE_RATE=44100
 ```
 
 For a current list of configuration constants, see [musiclearn/config.py](./musiclearn/config.py)
 
-## Remaining TODOs
-
-### MIDI quartet LSTM-VAE model
+## TODOs:
 
 - [X] Write code to generate interpolations between two pieces and output as MIDI
 - [ ] Try bidirectional LSTM layers

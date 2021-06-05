@@ -1,5 +1,6 @@
 """processing.py
 Preprocessing audio data (.wav files) for analysis.
+Author: Alex Kyllo
 """
 import logging
 import os

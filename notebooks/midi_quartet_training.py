@@ -7,21 +7,15 @@
 # An exploratory notebook for playing with model architecture ideas.
 
 # %%
-#%load_ext autoreload
-#%autoreload 2
-# %%
 import itertools
 import os
-import pathlib
 import sys
 
 import joblib
 import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import OrdinalEncoder
-from tensorflow.keras import Model, Sequential
-from tensorflow.keras import backend as K
-from tensorflow.keras import layers, losses, metrics, optimizers, utils
+from tensorflow.keras import optimizers
 
 sys.path.append("..")
 from musiclearn import processing, vae_models

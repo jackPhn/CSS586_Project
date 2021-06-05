@@ -63,7 +63,7 @@ def train_mtvae(
     bidirectional,
     patience=10,
 ):
-    """"""
+    """Train the MultiTrack VAE once with a given set of hyperparameters."""
     # String quartet MIDI programs
     x = processing.get_string_quartets(ticks_per_beat)
     mtvae = vae_models.MultiTrackVAE(
