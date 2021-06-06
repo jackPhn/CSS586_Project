@@ -43,4 +43,5 @@
 #python musiclearn_cli.py fit-mtsvae mtsvae_0016 --beats-per-phrase 4 --lstm-units 128 --latent-dim 512 --embedding-dim 8 --dropout-rate 0.5 --patience 10 --augment --epochs 100 --batch-size 128 --learning-rate 0.0005
 #python musiclearn_cli.py fit-mtsvae mtsvae_0017 --beats-per-phrase 8 --lstm-units 128 --latent-dim 512 --embedding-dim 8 --dropout-rate 0.5 --augment --patience 10 --batch-size 128
 #python musiclearn_cli.py fit-mtvae mtvae_0020 --beats-per-phrase 4 --lstm-units 128 --latent-dim 512 --embedding-dim 8 --dropout-rate 0.5 --patience 20 --batch-size 64 --learning-rate 0.0004 --augment
-python musiclearn_cli.py fit-mtvae mtvae_0021 --beats-per-phrase 4 --lstm-units 128 --latent-dim 512 --embedding-dim 8 --dropout-rate 0.5 --patience 20 --augment
+#python musiclearn_cli.py fit-mtvae mtvae_0021 --beats-per-phrase 4 --lstm-units 128 --latent-dim 512 --embedding-dim 8 --dropout-rate 0.5 --patience 20 --augment
+python musiclearn_cli.py fit-mtvae mtvae --beats-per-phrase 4 --lstm-units 128 --latent-dim 512 --embedding-dim 8 --dropout-rate 0.5 --patience 20 --augment

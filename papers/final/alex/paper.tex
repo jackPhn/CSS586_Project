@@ -252,7 +252,7 @@ arrangement found in the MusicNet dataset.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\linewidth]{first_bar.png}
+  \includegraphics[width=\linewidth]{figures/first_bar.png}
   \caption{Pianoroll visualization of the first measure of
     Beethoven's Serioso String Quartet in F Minor}
   \label{pianoroll}
@@ -262,7 +262,7 @@ arrangement found in the MusicNet dataset.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\linewidth]{first_bar_sheet.png}
+  \includegraphics[width=\linewidth]{figures/first_bar_sheet.png}
   \caption{Sheet music of the first measure of Beethoven's Serioso
     String Quartet in F Minor}
   \label{sheet}
@@ -281,15 +281,34 @@ integers as vectors; embedding vector length is a tunable
 hyperparameter and we found the best results with it set to 8. Then
 two LSTM layers, with a dropout layer in between, convert the
 sequences into latent codes, which are modeled as a multidimensional
-Gaussian distribution.
+Gaussian distribution $z$, produced by the encoder output Lambda layer
+(Figure \ref{decoder}).
 
 The decoder model samples from the latent space $z$ with the
 distribution parameterized by the $\mu$ and $log(\sigma)$ values
-learned by the encoder, and then splits into four parallel output
-paths, one per instrument track. Each path contains again two LSTM
-layers with a dropout layer between them, and then a fully connected
-layer with softmax activation is used to select the most probable note
-value for the current track at the current time step.
+learned by the encoder, and then utilizes two LSTM layers with a
+dropout layer between them to generate sequences from the latent
+codes. Then the network splits into four parallel outputs, one per
+instrument track, where a fully connected layer with softmax
+activation is used to select the most probable note value for the
+the current track at the each time step (Figure \ref{decoder}).
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/encoder.png}
+  \caption{A directed graph diagram of the encoder network.}
+  \label{encoder}
+\end{figure}
+
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/decoder.png}
+  \caption{A directed graph diagram of the decoder network (only one
+    of four parallel output layers shown).}
+  \label{decoder}
+\end{figure}
+
 
 The autoencoder reconstruction loss function is sparse categorical
 cross-entropy, which is added to the Kullback-Leibler divergence of
@@ -299,7 +318,6 @@ distribution with mean 0 and standard deviation 1, resulting in the
 which is a standard variational autoencoder loss function. This loss
 function is applied to each track independently and then summed across
 all four tracks with equal weight.
-
 
 \begin{equation}
   \label{nelbo}
@@ -312,7 +330,7 @@ encoder, which approximates the true posterior probability $p(z|x)$,
 and $p_\theta(x|z)$ represents the decoder, which parameterizes the
 likelihood $p(x|z)$ \cite{roberts_hierarchical_2018}.
 
-TODO: model architecture plots
+
 
 \subsection{Model Experimentation}
 

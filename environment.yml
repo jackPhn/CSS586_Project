@@ -18,3 +18,8 @@ dependencies:
   - pip
   - readline
   - pydot
+  - click
+  - seaborn
+  - jupytext
+  - pip:
+    - midi2audio

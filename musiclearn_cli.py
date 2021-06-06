@@ -95,70 +95,6 @@ def fit_mtvae(
 
 
 @click.command()
-@click.argument("exp_name", type=click.STRING)
-@click.option("--ticks-per-beat", type=click.INT, default=4, help="Time steps per quarter note.")
-@click.option("--beats-per-phrase", type=click.INT, default=4, help="Quarter notes per phrase.")
-@click.option("--epochs", type=click.INT, default=500, help="The training batch size.")
-@click.option("--batch-size", type=click.INT, default=32, help="The training batch size.")
-@click.option(
-    "--learning-rate", type=click.FLOAT, default=0.0002, help="The optimizer learning rate."
-)
-@click.option("--lstm-units", type=click.INT, default=256, help="Number of LSTM units per layer.")
-@click.option("--latent-dim", type=click.INT, default=100, help="The latent vector dimension.")
-@click.option("--embedding-dim", type=click.INT, default=8, help="The note embedding dimension.")
-@click.option(
-    "--dropout-rate", type=click.FLOAT, default=0.4, help="The dropout rate between LSTM layers"
-)
-@click.option("--gru/--lstm", default=False, help="Use GRU layer instead of LSTM.")
-@click.option(
-    "--bidirectional/--unidirectional",
-    default=False,
-    help="Use bidirectional LSTM layer in encoder.",
-)
-@click.option("--patience", type=click.INT, default=10, help="The early stopping patience.")
-@click.option(
-    "--augment/--no-augment",
-    default=False,
-    help="Augment the training set with random pitch shifts.",
-)
-def fit_mtsvae(
-    exp_name,
-    ticks_per_beat,
-    beats_per_phrase,
-    epochs,
-    batch_size,
-    learning_rate,
-    lstm_units,
-    latent_dim,
-    embedding_dim,
-    dropout_rate,
-    gru,
-    bidirectional,
-    patience,
-    augment,
-):
-    """Run MultiTrackSplitVAE experiment named EXP_NAME with hyperparameter options.
-    Author: Alex Kyllo"""
-    training.train_mtvae(
-        exp_name,
-        vae_models.MultiTrackSplitVAE,
-        ticks_per_beat,
-        beats_per_phrase,
-        epochs,
-        batch_size,
-        learning_rate,
-        lstm_units,
-        latent_dim,
-        embedding_dim,
-        dropout_rate,
-        gru,
-        bidirectional,
-        patience,
-        augment,
-    )
-
-
-@click.command()
 @click.argument("model_path", type=click.Path(exists=True))
 @click.argument("midi_1", type=click.Path(exists=True))
 @click.argument("midi_2", type=click.Path(exists=True))
@@ -168,31 +104,6 @@ def interpolate_mtvae(model_path, midi_1, midi_2, output_dir, n):
     """Use MODEL_PATH to interpolate n points between MIDI_1 and MIDI_2."""
     programs = [40, 40, 41, 42]  # violin x2, viola, cello
     model = vae_models.MultiTrackVAE.from_saved(model_path)
-    scores = [processing.midi_to_music21(f) for f in [midi_1, midi_2]]
-    arrays = [processing.score_to_array(sc, model.ticks_per_beat) for sc in scores]
-    output_arrays = model.interpolate(arrays[0], arrays[1], n)
-    output_scores = [
-        processing.array_to_score(arr, programs=programs, resolution=model.ticks_per_beat)
-        for arr in output_arrays
-    ]
-    LOG.info(
-        f"Generating {n} interpolations between {midi_1} and {midi_2} and saving to {output_dir}..."
-    )
-    os.makedirs(output_dir, exist_ok=True)
-    for i, score in enumerate(output_scores):
-        score.write("midi", Path(output_dir) / f"interpolation_{i}.mid")
-
-
-@click.command()
-@click.argument("model_path", type=click.Path(exists=True))
-@click.argument("midi_1", type=click.Path(exists=True))
-@click.argument("midi_2", type=click.Path(exists=True))
-@click.argument("output_dir", type=click.Path())
-@click.option("--n", type=click.INT, default=3)
-def interpolate_mtsvae(model_path, midi_1, midi_2, output_dir, n):
-    """Use MODEL_PATH to interpolate n points between MIDI_1 and MIDI_2."""
-    programs = [40, 40, 41, 42]  # violin x2, viola, cello
-    model = vae_models.MultiTrackSplitVAE.from_saved(model_path)
     scores = [processing.midi_to_music21(f) for f in [midi_1, midi_2]]
     arrays = [processing.score_to_array(sc, model.ticks_per_beat) for sc in scores]
     output_arrays = model.interpolate(arrays[0], arrays[1], n)
@@ -295,9 +206,7 @@ def cli():
 def main():
     """"""
     cli.add_command(fit_mtvae)
-    cli.add_command(fit_mtsvae)
     cli.add_command(interpolate_mtvae)
-    cli.add_command(interpolate_mtsvae)
     cli.add_command(fit_sequential)
     cli.add_command(generate_music)
     cli.add_command(plot_losses)
