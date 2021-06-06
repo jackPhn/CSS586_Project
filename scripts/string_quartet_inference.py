@@ -48,6 +48,8 @@ num_interpolations = 5  # Number of interpolations per pair
 exp_name = "mtvae_0021"
 exp_time = "2021-06-06T09:32:32"
 saved_model_path = f"../experiments/{exp_name}/{exp_time}/saved_model"
+
+# %%
 model = vae_models.MultiTrackVAE.from_saved(saved_model_path)
 
 # %% [markdown]
@@ -65,8 +67,10 @@ pairs = list(zip(left, reversed(right)))
 pairs
 
 # %% [markdown]
+# ## Interpolation
+#
 # Now we'll use the model to reconstruct each of the pairs
-# and use linear interpolatation to generate 3 vectors in between them in the latent space.
+# and use linear interpolation to generate 3 vectors in between them in the latent space.
 #
 # We'll truncate each track to the first 16 measures to save time and space.
 
@@ -102,12 +106,20 @@ for pair in pairs:
     # write the interpolations to disk as MusicXML format (for sheet music printing)
 
 # %% [markdown]
-# ## Convert MIDI files to WAV so we can listen to them anywhere without synthesizer software.
+# ## Convert MIDI files to WAV
+#
+# This way we can listen to them anywhere without synthesizer software.
+#
+# Requires the [fluidsynth](https://www.fluidsynth.org/) library installed on the system
+# and a sound font such as the
+# [Fluid Release 3 General-MIDI Soundfont](https://member.keymusician.com/Member/FluidR3_GM/index.html)
 
+# %%
+SOUND_FONT = "/usr/share/sounds/sf2/FluidR3_GM.sf2"
 # %%
 import midi2audio
 
-fs = midi2audio.FluidSynth(sound_font="/usr/share/sounds/sf2/FluidR3_GM.sf2")
+fs = midi2audio.FluidSynth(sound_font=SOUND_FONT)
 
 # %%
 for pair in pairs:
@@ -120,3 +132,51 @@ for pair in pairs:
         wav = mid.with_suffix(".wav")
         fs.midi_to_audio(mid, wav)
         print(f"{mid} converted to {wav}")
+
+# %% [markdown]
+# ## Listen to WAV files
+#
+# using the IPython Audio widget
+
+# %%
+from IPython.display import Audio
+
+# %%
+wavs = sorted(list(output_dir.rglob("*.wav")))
+
+
+# %% [markdown]
+# Let's listen to interpolations between:
+#
+# - Beethoven's String Quartet No 15 in A minor part 2. Allegro ma non tanto
+# - Mozart String Quartet No 19 in C major part 4. Allegro molto
+
+# %% [markdown]
+# Reconstruction of Beethoven:
+
+# %%
+Audio(wavs[0])
+
+# %% [markdown]
+# 1/4 of the way from Beethoven to Mozart:
+
+# %%
+Audio(wavs[1])
+
+# %% [markdown]
+# Halfway between Beethoven and Mozart:
+
+# %%
+Audio(wavs[2])
+
+# %% [markdown]
+# 3/4 of the way from Beethoven to Mozart:
+
+# %%
+Audio(wavs[3])
+
+# %% [markdown]
+# Reconstruction of Mozart:
+
+# %%
+Audio(wavs[4])
