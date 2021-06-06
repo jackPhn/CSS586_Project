@@ -51,6 +51,11 @@ def set_seeds(seed):
     default=False,
     help="Use bidirectional LSTM layer in encoder.",
 )
+@click.option(
+    "--augment/--no-augment",
+    default=False,
+    help="Augment the training set with random pitch shifts.",
+)
 @click.option("--patience", type=click.INT, default=10, help="The early stopping patience.")
 def fit_mtvae(
     exp_name,
@@ -66,6 +71,7 @@ def fit_mtvae(
     gru,
     bidirectional,
     patience,
+    augment,
 ):
     """Run MultiTrackVAE experiment named EXP_NAME with hyperparameter options.
     Author: Alex Kyllo"""
@@ -84,6 +90,7 @@ def fit_mtvae(
         gru,
         bidirectional,
         patience,
+        augment,
     )
 
 
@@ -109,6 +116,11 @@ def fit_mtvae(
     help="Use bidirectional LSTM layer in encoder.",
 )
 @click.option("--patience", type=click.INT, default=10, help="The early stopping patience.")
+@click.option(
+    "--augment/--no-augment",
+    default=False,
+    help="Augment the training set with random pitch shifts.",
+)
 def fit_mtsvae(
     exp_name,
     ticks_per_beat,
@@ -123,6 +135,7 @@ def fit_mtsvae(
     gru,
     bidirectional,
     patience,
+    augment,
 ):
     """Run MultiTrackSplitVAE experiment named EXP_NAME with hyperparameter options.
     Author: Alex Kyllo"""
@@ -141,6 +154,7 @@ def fit_mtsvae(
         gru,
         bidirectional,
         patience,
+        augment,
     )
 
 
@@ -269,6 +283,7 @@ def generate_music(output_name, data_path, model_type, weights_path, num_notes):
 @click.argument("output_file", type=click.Path())
 def plot_losses(history_file, output_file):
     """Plot model training & validation loss curves from HISTORY_FILE and save to OUTPUT_FILE."""
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
     plotting.plot_learning_curves(history_file, output_file)
 
 

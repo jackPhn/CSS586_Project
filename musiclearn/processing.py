@@ -271,3 +271,16 @@ def get_string_quartets(ticks_per_beat: int):
         x = np.vstack([score_to_array(score, resolution=ticks_per_beat) for score in scores])
         np.save(f, x)
     return x
+
+
+def random_transpose(arr):
+    """Pitch shift the array up or down by +/- 6 semitones"""
+    shift = np.random.choice(range(1, 7))
+    return arr + shift * ~np.isin(arr, [REST, SUSTAIN])
+
+
+def augment(arr):
+    """Random transpose each training example and append to the original dataset."""
+    augs = np.vectorize(random_transpose)(arr)
+    arr = np.vstack([arr, augs])
+    return arr

@@ -1,5 +1,7 @@
 %% The first command in your LaTeX source must be the \documentclass command.
 \documentclass[sigconf,authorversion]{acmart}
+\usepackage{pgf}
+\usepackage{pgfplots}
 %% NOTE that a single column version may be required for
 %% submission and peer review. This can be done by changing
 %% the \doucmentclass[...]{acmart} in this template to
@@ -186,25 +188,36 @@ Pypianoroll \cite{dong_pypianoroll_2018} and music21
 
 In order to accommodate polyphonic music, we each MIDI file is
 converted into a modified pianoroll representation, an example of
-which is visualized in Figure \ref{pianoroll}. In this modified
-representation, each instrument track is a sequence of integers from
-0-129 representing the MIDI note pitch value being played at the given
-time step, where values 0-127 are pitches, 128 is a rest (silence) and
-129 is sustain, indicating that the previously played pitch is held
-continuously. MIDI data contains pressure values that indicate how
-hard or soft each note is played; this information is discarded in our
-preprocessing and all notes are represented with constant
-pressure. Because chords (multiple notes being played simultaneously
-by the same instrument) are relatively rare in string quartets, the
-lowest note of each chord is taken and the rest discarded, to reduce
-dimensionality. Because notes at the extreme low and high end are rare
-and are out of range of common instruments, the note pitch values are
-clipped to a narrower range and ordinal encoded. For the 36 string
-quartets found in the MusicNet database, this results in 66 distinct
-values, where 0-63 represent notes played by the violins, viola and
-cello, 64 is rest and 65 is sustain. Our software package also
-includes functions to convert this representation back into a Music21
-Score object, which can then be written to a MIDI file.
+which is visualized in Figure \ref{pianoroll}. While the standard
+pianoroll represents each time-step as a multi-hot encoded vector of
+note values, because most notes are not being played at most timesteps
+there is an extreme class imbalance and sparsity in the matrix. This
+is reported in \cite{kumar2019polyphonic} to cause problems in model
+fitting and metrics calculation, so they introduce an alternative
+``multi-stream'' representation of the pianoroll, which we closely,
+(but not exactly) emulate in this work.
+
+In our modified representation, each instrument track is a sequence of
+integers from 0-129 representing the MIDI note pitch value being
+played at the given time step, where values 0-127 are pitches, 128 is
+a rest (silence) and 129 is sustain, indicating that the previously
+played pitch is held continuously. MIDI data contains pressure values
+that indicate how hard or soft each note is played; this information
+is discarded in our preprocessing and all notes are represented with
+constant pressure. Because chords (multiple notes being played
+simultaneously by the same instrument) are relatively rare in string
+quartets, the lowest note of each chord is taken and the rest
+discarded, to reduce dimensionality. Because notes at the extreme low
+and high end are rare and are out of range of common instruments, the
+note pitch values are clipped to a narrower range and ordinal
+encoded. For the 36 string quartets found in the MusicNet database,
+this results in 66 distinct values, where 0-63 represent notes played
+by the violins, viola and cello, 64 is rest and 65 is sustain. Our
+software package also includes functions to convert this
+representation back into a Music21 Score object, which can then be
+written to a MIDI file.
+
+TODO: plot histogram of notes per instrument
 
 Because songs are typically at least a few minutes long and of varying
 length, it will not be feasible to train with entire songs as
@@ -250,18 +263,6 @@ arrangement found in the MusicNet dataset.
     from Beethoven piece.}
 \end{figure}
 
-
-Data augmentation is also possible and we assess its impact on
-the results--the literature suggests augmentation via pitch shifting
-each training example up or down by up to six semitones, and
-increasing or reducing the speed by up to 10\% in order to create
-additional training examples and reduce overfitting
-\cite{oore_this_2018}.
-
-The multi-stream representation discussed in
-\cite{kumar2019polyphonic} addresses the issue of extreme class
-imbalance and sparsity in the pianoroll representation.
-
 \subsection{Model Design}
 
 The model is a recurrent variational autoencoder; both Long Short-Term
@@ -287,10 +288,22 @@ The autoencoder reconstruction loss function is sparse categorical
 cross-entropy, which is added to the Kullback-Leibler divergence of
 the approximate posterior distribution from a multivariate Gaussian
 distribution with mean 0 and standard deviation 1, resulting in the
-(negative) evidence lower bound (ELBO) loss, which is a standard
-variational autoencoder loss function. This loss function is applied
-to each track independently and then summed across all four tracks
-with equal weight.
+(negative) evidence lower bound (ELBO) loss (Equation \ref{nelbo}),
+which is a standard variational autoencoder loss function. This loss
+function is applied to each track independently and then summed across
+all four tracks with equal weight.
+
+
+\begin{equation}
+  \label{nelbo}
+\mathbb{E}[log{p_\theta}(x|z)]-\mathbb{KL}(q_\lambda(z|x)||p(z))
+\end{equation}
+
+where $\lambda$ and $\theta$ represent the encoder and decoder
+parameters respectively, while $q_\lambda(z|x)$ represents the
+encoder, which approximates the true posterior probability $p(z|x)$,
+and $p_\theta(x|z)$ represents the decoder, which parameterizes the
+likelihood $p(x|z)$ \cite{roberts_hierarchical_2018}.
 
 TODO: model architecture plots
 
@@ -309,6 +322,8 @@ and best parameters in \textbf{bold}:
   \item latent code dimension: 128, 256, \textbf{512}
   \item embedding dimension: 4, \textbf{8}, 16
   \item dropout rate: 0.2, 0.4, \textbf{0.5}
+  \item time steps per beat (quarter note): \textbf{4}, 8
+  \item beats per phrase: \textbf{4}, 8
 \end{itemize}
 
 Each model was trained for up to 500 epochs with an early stopping
@@ -317,18 +332,42 @@ training data after each epoch. The best model was selected by a
 combination of validation loss and listening to hand-picked sample
 reconstructions and interpolations.
 
+Data augmentation was also tested--\cite{oore_this_2018} suggests
+augmentation via pitch shifting each training example up or down by up
+to six semitones in order to create additional training examples and
+reduce overfitting, so we followed that recommendation and used it to
+double the size of the training dataset. As a result, we saw much
+lower validation losses (compare Figure \ref{loss} and Figure
+\ref{loss_augment} and a small but noticeable improvement in the
+fidelity of the song reconstructions, suggesting that this method was
+effective in reducing overfitting.
+
+\begin{figure}[htbp]
+    \begin{center}
+        \scalebox{0.5}{\input{figures/loss.pgf}}
+    \end{center}
+    \caption{Training and validation loss for the best performing model - without data augmentation}
+    \label{loss}
+\end{figure}
+
+\begin{figure}[htbp]
+    \begin{center}
+        \scalebox{0.5}{\input{figures/loss_augment.pgf}}
+    \end{center}
+    \caption{Training and validation loss for the best performing model - with data augmentation}
+    \label{loss_augment}
+\end{figure}
+
+
 \section{Results}
 
 The reconstructed music produced by the model sounds reminiscent of
 the original inputs, preserving the key signature and general rhythmic
-and melodic structure, albeit with noticeable differences.
+and melodic structure, albeit with noticeable differences at the
+individual note level.
 
 A website with several samples of the original input MIDI tracks, the
-autoencoded outputs, and interpolations, is presented at: TODO
-
-TODO: learning curve plot
-
-TODO: links to audio samples
+autoencoded outputs, and interpolations, is presented at: \textbf{TODO}
 
 \subsection{Model Evaluation}
 

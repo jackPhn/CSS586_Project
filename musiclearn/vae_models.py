@@ -188,7 +188,7 @@ def build_multi_track_split_vae(
 
     # define decoder model
     decoder_input = layers.Input(shape=(latent_dim,))
-    decoders = [layers.RepeatVector(n_timesteps)(decoder_input) for _ in n_tracks]
+    decoders = [layers.RepeatVector(n_timesteps)(decoder_input) for _ in range(n_tracks)]
     decoders = [rnn(lstm_units, return_sequences=True)(d) for d in decoders]
     decoders = [layers.Dropout(dropout_rate)(d) for d in decoders]
     decoders = [rnn(lstm_units, return_sequences=True)(d) for d in decoders]

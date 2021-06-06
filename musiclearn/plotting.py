@@ -28,4 +28,5 @@ def plot_learning_curves(history_file: os.PathLike, dest_path: os.PathLike):
     plt.savefig(
         dest_path,
     )
+
     return (fig, ax)
