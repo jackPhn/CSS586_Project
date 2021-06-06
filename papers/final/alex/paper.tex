@@ -212,12 +212,19 @@ and high end are rare and are out of range of common instruments, the
 note pitch values are clipped to a narrower range and ordinal
 encoded. For the 36 string quartets found in the MusicNet database,
 this results in 66 distinct values, where 0-63 represent notes played
-by the violins, viola and cello, 64 is rest and 65 is sustain. Our
-software package also includes functions to convert this
-representation back into a Music21 Score object, which can then be
-written to a MIDI file.
+by the violins, viola and cello, 64 is rest and 65 is sustain. Figure
+\ref{pitch_dist} depicts the distribution of these pitch values per
+instrument. Our software package also includes functions to convert
+this representation back into a Music21 Score object, which can then
+be written to a MIDI file.
 
-TODO: plot histogram of notes per instrument
+\begin{figure}[htbp]
+    \begin{center}
+        \scalebox{0.6}{\input{figures/pitch_dist.pgf}}
+    \end{center}
+    \caption{Distribution of pitch values per instrument in the MusicNet string quartets}
+    \label{pitch_dist}
+\end{figure}
 
 Because songs are typically at least a few minutes long and of varying
 length, it will not be feasible to train with entire songs as
