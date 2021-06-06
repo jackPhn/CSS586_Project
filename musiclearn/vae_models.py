@@ -144,6 +144,75 @@ def build_multi_track_vae(
     return vae_model, encoder_model, decoder_model
 
 
+def build_multi_track_split_vae(
+    optimizer,
+    lstm_units,
+    latent_dim,
+    embedding_dim,
+    n_timesteps,
+    n_tracks,
+    n_notes,
+    dropout_rate=0.2,
+    gru=False,
+    bidirectional=False,
+):
+    """Build a multi-track LSTM-VAE Keras model for autoencoding polyphonic music."""
+    # define encoder model
+    inputs = layers.Input(shape=(n_timesteps, n_tracks))
+    if gru:
+        rnn = layers.GRU
+    else:
+        rnn = layers.LSTM
+    if embedding_dim > 0:
+        encoder = layers.Embedding(n_notes, embedding_dim, input_length=n_timesteps)(inputs)
+        encoder = layers.Reshape((n_timesteps, embedding_dim * n_tracks))(encoder)
+        if bidirectional:
+            encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=True))(encoder)
+        else:
+            encoder = rnn(lstm_units, return_sequences=True)(encoder)
+    else:
+        if bidirectional:
+            encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=True))(inputs)
+        else:
+            encoder = rnn(lstm_units, return_sequences=True)(inputs)
+    encoder = layers.Dropout(dropout_rate)(encoder)
+    if bidirectional:
+        encoder = layers.Bidirectional(rnn(lstm_units, return_sequences=False))(encoder)
+    else:
+        encoder = rnn(lstm_units, return_sequences=False)(encoder)
+    mu = layers.Dense(latent_dim, name="mu")(encoder)
+    sigma = layers.Dense(latent_dim, name="sigma")(encoder)
+    # Latent space sampling
+    z = layers.Lambda(sample_normal, output_shape=(latent_dim,))([mu, sigma])
+    encoder_model = keras.Model(inputs, [mu, sigma, z])
+
+    # define decoder model
+    decoder_input = layers.Input(shape=(latent_dim,))
+    decoders = [layers.RepeatVector(n_timesteps)(decoder_input) for _ in n_tracks]
+    decoders = [rnn(lstm_units, return_sequences=True)(d) for d in decoders]
+    decoders = [layers.Dropout(dropout_rate)(d) for d in decoders]
+    decoders = [rnn(lstm_units, return_sequences=True)(d) for d in decoders]
+    outputs = [
+        layers.TimeDistributed(layers.Dense(n_notes, activation="softmax", name=f"track_{i}"))(d)
+        for i, d in enumerate(decoders)
+    ]
+    decoder_model = keras.Model(decoder_input, outputs)
+    # connect encoder and decoder together
+    decoder_outputs = decoder_model(z)
+    vae_model = keras.Model(inputs=inputs, outputs=decoder_outputs)
+
+    kl_loss = -0.5 * tf.reduce_mean(sigma - tf.square(mu) - tf.exp(sigma) + 1)
+    vae_model.add_loss(kl_loss)
+
+    vae_model.compile(
+        optimizer=optimizer,
+        loss="sparse_categorical_crossentropy",
+        metrics=["sparse_categorical_accuracy"],
+    )
+
+    return vae_model, encoder_model, decoder_model
+
+
 class MultiTrackVAE:
     """A Multi Track LSTM Variational Autoencoder."""
 
@@ -315,3 +384,48 @@ class MultiTrackVAE:
             x = self.ord_enc.inverse_transform(x)
             results.append(x)
         return results
+
+
+class MultiTrackSplitVAE(MultiTrackVAE):
+    """Split LSTM version of MultiTrackVAE."""
+
+    def train(self, x, ticks_per_beat, beats_per_phrase, epochs, callbacks=None):
+        """Train the model on a dataset."""
+        # Dataset prep, ordinal encoding
+        self.ticks_per_beat = ticks_per_beat
+        self.beats_per_phrase = beats_per_phrase
+        notes = np.unique(x)
+        self.n_notes = notes.shape[0]
+        self.n_tracks = x.shape[1]
+        self.ord_enc = OrdinalEncoder(categories=list(itertools.repeat(notes, self.n_tracks)))
+        x = self.ord_enc.fit_transform(x).astype(int)
+        self.rest_code = np.argwhere(self.ord_enc.categories_[0] == processing.REST)[0][0]
+        # Split songs into phrases
+        x = processing.split_array(
+            x, beats_per_phrase=beats_per_phrase, resolution=ticks_per_beat, fill=self.rest_code
+        )
+        self.n_timesteps = x.shape[1]
+        # Remove phrases that are only rests
+        all_rests = self.rest_code * self.n_timesteps * self.n_tracks
+        x = x[x.sum(axis=(1, 2)) != all_rests]
+        self.vae_model, self.encoder_model, self.decoder_model = build_multi_track_split_vae(
+            self.optimizer,
+            self.lstm_units,
+            self.latent_dim,
+            self.embedding_dim,
+            self.n_timesteps,
+            self.n_tracks,
+            self.n_notes,
+            self.dropout_rate,
+        )
+        self.history = self.vae_model.fit(
+            x,
+            tf.unstack(x, axis=2),
+            batch_size=self.batch_size,
+            epochs=epochs,
+            validation_split=0.1,
+            callbacks=callbacks,
+            initial_epoch=self.trained_epochs,
+        )
+        self.trained_epochs = self.trained_epochs + epochs
+        return self

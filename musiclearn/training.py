@@ -50,6 +50,7 @@ def log_end(exp_name, model_name, start_time):
 
 def train_mtvae(
     exp_name,
+    model_class,
     ticks_per_beat,
     beats_per_phrase,
     epochs,
@@ -66,7 +67,7 @@ def train_mtvae(
     """Train the MultiTrack VAE once with a given set of hyperparameters."""
     # String quartet MIDI programs
     x = processing.get_string_quartets(ticks_per_beat)
-    mtvae = vae_models.MultiTrackVAE(
+    mtvae = model_class(
         lstm_units,
         embedding_dim,
         latent_dim,
@@ -95,6 +96,7 @@ def train_mtvae(
         dropout_rate=dropout_rate,
         patience=patience,
         gru=gru,
+        bidirectional=bidirectional,
     )
     mtvae.train(x, ticks_per_beat, beats_per_phrase, epochs, callbacks=cbacks)
     log_end(exp_name, model_name, start_time)

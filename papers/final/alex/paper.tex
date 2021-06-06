@@ -4,6 +4,8 @@
 %% submission and peer review. This can be done by changing
 %% the \doucmentclass[...]{acmart} in this template to
 %% \documentclass[manuscript,screen,review]{acmart}
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 
 \begin{document}
 \settopmatter{printacmref=false}
@@ -67,6 +69,15 @@ an audio music performance. This project focuses on generative
 modeling of symbolic (MIDI) music to compose original musical scores
 by blending input scores through continuous latent space interpolation.
 
+A survey of related works in generative modeling of polyphonic music
+turned up several models focused on multi-instrument pop/rock music
+arrangements or classical piano performances. In contrast, this
+project focuses on variational autoencoding and latent space
+interpolation of classical string quartets (arrangements for an
+ensemble of two violins, one viola and one cello) and is, to the
+author's knowledge, the first project to apply this modeling approach
+to this type of musical arrangement.
+
 \section{Related Work}
 
 The state of the art in music generation still has a long way to go
@@ -85,10 +96,13 @@ Short-Term Memory (LSTM) autoencoder for MIDI that incorporates a
 novel hierarchical structure using a ``conductor'' recurrent layer in
 its decoder model to better capture structure at multiple levels and
 avoid the problem of ``posterior/mode collapse'' whereby a generative
-model learns to ignore its latent code and rely on autoregression
-\cite{roberts_hierarchical_2018}. This model is trained on 16-bar
-paragraphs of music and is capable of generating new melodies that
-blend two given melodies via latent space interpolation.
+model learns to ignore its latent codes and rely on autoregression to
+generate output sequences \cite{roberts_hierarchical_2018}. This model
+is trained on 16-bar paragraphs of music and is capable of generating
+new melodies that blend two given melodies together via latent space
+interpolation. Among the literature surveyed, MusicVAE's approach is
+the most similar to this work; in comparison our model is
+significantly simpler and works on a single bar of music at a time.
 
 Another Magenta model called Music Transformer is a generative model
 that borrows its approach from the Natural Language Processing (NLP)
@@ -100,7 +114,12 @@ coherent structure. Music Transformer was trained on a dataset of
 Piano-e-competition performances \cite{hawthorne2019enabling} and its
 generated piano music received favorable qualitative (Likert scale)
 ratings from human listeners for its resemblance to human-composed
-music \cite{huang_music_2018}.
+music \cite{huang_music_2018}. In contrast to MusicVAE and this work,
+Music Transformer is capable of generating much longer sequences of
+music, but does so via sequence extrapolation rather than
+interpolation, so it can continue a given priming melody but does not
+blend multiple given melodies together. It also assumes a single
+instrument track (piano).
 
 MuseGAN \cite{dong2017musegan} is an application of Generative
 Adversarial Networks (GAN) to polyphonic MIDI music generation,
@@ -110,16 +129,6 @@ of rock songs from the Lakh Midi Dataset
 two-level generator that first samples latent codes at the phrase or
 bar level, then generates notes within the bars, to produce
 longer-term structural patterns.
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=\linewidth]{song_structure.png}
-  \caption{Diagram of the hierarchical structure of a musical
-    composition, from the MuseGAN paper \cite{dong2017musegan}.}
-  \label{song_structure}
-  \Description{A diagram showing the hierarchical structure of songs,
-    to paragraphs, to phrases, to bars, to, beats, to pixels.}
-\end{figure}
 
 A major advantage of working with the symbolic representation of music
 is that it is of far lower dimensionality than the raw audio waveforms
@@ -149,6 +158,11 @@ melodic structure of different styles of music, then providing
 generations from this model as conditioning inputs to a WaveNet-based
 raw audio generator \cite{manzelli_conditioning_2018}.
 
+While there may be significant opportunity in future approaches that
+combining the two, contemporary research generally treats symbolic and
+audio music modeling as separate problem domains and this work does
+the same, choosing to focus on symbolic music.
+
 \section{Methods}
 
 \subsection{Datasets}
@@ -177,23 +191,25 @@ representation, each instrument track is a sequence of integers from
 0-129 representing the MIDI note pitch value being played at the given
 time step, where values 0-127 are pitches, 128 is a rest (silence) and
 129 is sustain, indicating that the previously played pitch is held
-continuously. Because chords (multiple notes being played
-simultaneously by the same instrument) are relatively rare in string
-quartets, the lowest note of each chord is taken and the rest
-discarded, to reduce dimensionality. Because notes at the extreme low
-and high end are rare and are out of range of common instruments, the
-note pitch values are clipped to a narrower range and ordinal
-encoded. For the 36 string quartets found in the MusicNet database,
-this results in 66 distinct values, where 0-63 represent notes played
-by the violins, viola and cello, 64 is rest and 65 is sustain. Our
-software package also includes functions to convert this
-representation back into a Music21 Score object, which can then be
-written to a MIDI file.
+continuously. MIDI data contains pressure values that indicate how
+hard or soft each note is played; this information is discarded in our
+preprocessing and all notes are represented with constant
+pressure. Because chords (multiple notes being played simultaneously
+by the same instrument) are relatively rare in string quartets, the
+lowest note of each chord is taken and the rest discarded, to reduce
+dimensionality. Because notes at the extreme low and high end are rare
+and are out of range of common instruments, the note pitch values are
+clipped to a narrower range and ordinal encoded. For the 36 string
+quartets found in the MusicNet database, this results in 66 distinct
+values, where 0-63 represent notes played by the violins, viola and
+cello, 64 is rest and 65 is sustain. Our software package also
+includes functions to convert this representation back into a Music21
+Score object, which can then be written to a MIDI file.
 
 Because songs are typically at least a few minutes long and of varying
 length, it will not be feasible to train with entire songs as
 examples, so we will crop songs into phrases of equal numbers of
-measures to use as training data.
+beats to use as training data.
 
 The result of this preprocessing is that each training example isbe a
 2D matrix of shape (time steps x instrument tracks) and stacking the
@@ -249,7 +265,8 @@ imbalance and sparsity in the pianoroll representation.
 \subsection{Model Design}
 
 The model is a recurrent variational autoencoder; both Long Short-Term
-Memory (LSTM) and Gated Recurrent Unit (GRU) cell types were tested.
+Memory (LSTM) and Gated Recurrent Unit (GRU) cell types were tested
+but this choice did not make a significant difference in the results.
 
 The encoder model utilizes an embedding layer to encode the note pitch
 integers as vectors; embedding vector length is a tunable
@@ -260,9 +277,58 @@ Gaussian distribution.
 
 The decoder model samples from the latent space $z$ with the
 distribution parameterized by the $\mu$ and $log(\sigma)$ values
-learned by the encoder.
+learned by the encoder, and then splits into four parallel output
+paths, one per instrument track. Each path contains again two LSTM
+layers with a dropout layer between them, and then a fully connected
+layer with softmax activation is used to select the most probable note
+value for the current track at the current time step.
+
+The autoencoder reconstruction loss function is sparse categorical
+cross-entropy, which is added to the Kullback-Leibler divergence of
+the approximate posterior distribution from a multivariate Gaussian
+distribution with mean 0 and standard deviation 1, resulting in the
+(negative) evidence lower bound (ELBO) loss, which is a standard
+variational autoencoder loss function. This loss function is applied
+to each track independently and then summed across all four tracks
+with equal weight.
 
 TODO: model architecture plots
+
+\subsection{Model Experimentation}
+
+The following hyperparameters were tuned, with tested values listed
+and best parameters in \textbf{bold}:
+
+\begin{itemize}
+  \tightlist
+  \item batch size: \textbf{32}, 64, 96
+  \item learning rate: 0.001, \textbf{0.0002}
+  \item recurrent layer type: LSTM, GRU (made no difference)
+  \item recurrent encoder layer directions: \textbf{unidirectional}, bidirectional
+  \item recurrent layer cells: 64, \textbf{128}, 256
+  \item latent code dimension: 128, 256, \textbf{512}
+  \item embedding dimension: 4, \textbf{8}, 16
+  \item dropout rate: 0.2, 0.4, \textbf{0.5}
+\end{itemize}
+
+Each model was trained for up to 500 epochs with an early stopping
+patience of 20 epochs. The model was cross-validated on 10\% of the
+training data after each epoch. The best model was selected by a
+combination of validation loss and listening to hand-picked sample
+reconstructions and interpolations.
+
+\section{Results}
+
+The reconstructed music produced by the model sounds reminiscent of
+the original inputs, preserving the key signature and general rhythmic
+and melodic structure, albeit with noticeable differences.
+
+A website with several samples of the original input MIDI tracks, the
+autoencoded outputs, and interpolations, is presented at: TODO
+
+TODO: learning curve plot
+
+TODO: links to audio samples
 
 \subsection{Model Evaluation}
 
@@ -286,12 +352,6 @@ compare against known reference distributions per musical genre
 associated with designing a human subjects experiment, we
 utilize this quantitative approach to the quality assessment of
 generated samples.
-
-\section{Results}
-
-TODO: learning curve plot
-
-
 
 \section{Discussion}
 
