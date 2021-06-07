@@ -499,3 +499,4 @@ flycheck_*.el
 /experiments/*
 !/experiments/mtvae/
 !/experiments/mtvae/**/*
+run_experiments.sh
