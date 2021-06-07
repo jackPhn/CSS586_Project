@@ -63,6 +63,26 @@ Four output samples, one from each model, are provided.
 Each of the 18 directories contains five interpolations between two of
 the string quartet pieces in the MusicNet corpus, numbered 0-4.
 
+The interpolations are between the following pairs of MusicNet MIDI files:
+
+- `Haydn/2104_op64n5_1.mid` and `Ravel/2178_gr_rqtf2.mid`
+- `Haydn/2105_op64n5_2.mid` and `Ravel/2179_gr_rqtf3.mid`
+- `Haydn/2106_op64n5_3.mid` and `Ravel/2177_gr_rqtf1.mid`
+- `Beethoven/2497_qt11_4.mid` and `Mozart/1822_kv_421_1.mid`
+- `Beethoven/2433_qt16_3.mid` and `Mozart/1859_kv_464_2.mid`
+- `Beethoven/2368_qt12_4.mid` and `Mozart/1807_kv_387_3.mid`
+- `Beethoven/2314_qt15_2.mid` and `Mozart/1791_kv_465_4.mid`
+- `Beethoven/2480_qt05_1.mid` and `Mozart/1792_kv_465_1.mid`
+- `Beethoven/2481_qt05_2.mid` and `Mozart/1835_kv_590_3.mid`
+- `Beethoven/2379_qt08_4.mid` and `Mozart/1805_kv_387_1.mid`
+- `Beethoven/2365_qt12_1.mid` and `Mozart/1793_kv_465_2.mid`
+- `Beethoven/2562_qt02_4.mid` and `Mozart/1790_kv_465_3.mid`
+- `Beethoven/2494_qt11_1.mid` and `Mozart/1789_kv_465_2.mid`
+- `Beethoven/2403_qt01_4.mid` and `Mozart/1788_kv_465_1.mid`
+- `Beethoven/2376_qt08_1.mid` and `Dvorak/1916_dvq10m1.mid`
+- `Beethoven/2384_qt13_4.mid` and `Bach/2242_vs1_2.mid`
+- `Beethoven/2560_qt02_2.mid` and `Beethoven/2621_qt07_1.mid`
+- `Beethoven/2377_qt08_2.mid` and `Beethoven/2381_qt13_1.mid`
 
 ## TODOs:
 
