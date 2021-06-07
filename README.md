@@ -52,7 +52,7 @@ A collection of samples of the generated MIDI files, converted to mp3
 format, is presented at:
 [mp3samples (Google Drive Link)](https://drive.google.com/drive/folders/12o04uubXtP8WdI62Xe5fjE6wQgzCPG8n?usp=sharing)
 
-Within this Goo
+Within this directory, there are two subdirectories:
 
 ### jack_piano_prediction
 
