@@ -492,6 +492,7 @@ flycheck_*.el
 .vscode/
 
 # Project-specific ignores
+/outputs/
 /data/*.joblib
 /notebooks/*.npy
 /notebooks/*.joblib
