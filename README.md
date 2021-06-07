@@ -1,6 +1,13 @@
-# CSS586_Project
+# CSS586 Project: Generative Modeling of Symbolic Music
 
-Generative music modeling on symbolic (MIDI) and audio music data.
+Jack Phan and Alex Kyllo
+
+UW Bothell CSS 586
+
+Spring 2021
+
+A project for generative music modeling with deep learning on symbolic (MIDI)
+music data.
 
 ## Setup
 
@@ -79,7 +86,7 @@ The `musiclearn_cli.py` file provides a CLI for working with the models.
 
 Typing `python musiclearn_cli.py` will show a list of commands:
 
-```sh
+```
 Usage: musiclearn_cli.py [OPTIONS] COMMAND [ARGS]...
 
   Command line interface for the musiclearn project
