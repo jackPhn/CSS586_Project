@@ -46,12 +46,25 @@ MUSICNET_MIDI_DIR=/media/hdd1/data/school/css586/musicnet_midis
 
 For a current list of configuration constants, see [musiclearn/config.py](./musiclearn/config.py)
 
+## Results
+
+A collection of samples of the generated MIDI files, converted to mp3
+format, is presented at:
+[mp3samples (Google Drive Link)](https://drive.google.com/drive/folders/12o04uubXtP8WdI62Xe5fjE6wQgzCPG8n?usp=sharing)
+
+Within this Goo
+
+### jack_piano_prediction
+
+Four output samples, one from each model, are provided.
+
+### alex_string_quartet_interpolation
+
+Each of the 18 directories contains five interpolations between two of
+the string quartet pieces in the MusicNet corpus, numbered 0-4.
+
+
 ## TODOs:
 
-- [X] Write code to generate interpolations between two pieces and output as MIDI
-- [ ] Try bidirectional LSTM layers
-- [ ] Experiment with hierarchical "composer" decoder for longer sequences
-- [ ] Maybe do a conditional VAE, conditioning on composer name?
-- [ ] Run experiments to tune hyperparameters and assess output quality
 - [ ] Implement quantitative music generation quality metrics
 - [ ] Clean up codebase for submission

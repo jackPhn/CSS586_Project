@@ -2,6 +2,7 @@
 \documentclass[sigconf,authorversion]{acmart}
 \usepackage{pgf}
 \usepackage{pgfplots}
+\usepackage{url}
 %% NOTE that a single column version may be required for
 %% submission and peer review. This can be done by changing
 %% the \doucmentclass[...]{acmart} in this template to
@@ -36,7 +37,8 @@
   This paper presents the results of a project to apply a recurrent
   variational autoencoder to the task of modeling a latent space for
   generating pieces of multi-instrument symbolic classical music
-  through interpolation.
+  through interpolation. The code utilized for this research is available at:
+  \url{https://github.com/jackPhn/CSS586_Project/}
 \end{abstract}
 
 \keywords{deep learning, recurrent neural networks, sequential models,
@@ -395,10 +397,12 @@ the original inputs, preserving the key signature and general rhythmic
 and melodic structure, albeit with noticeable differences at the
 individual note level.
 
-A collection of several samples of the autoencoded outputs and
-interpolations, is presented at:
-\href{https://drive.google.com/drive/folders/12o04uubXtP8WdI62Xe5fjE6wQgzCPG8n?usp=sharing
-  (Google Drive link)}
+A collection of samples of the autoencoded outputs and
+interpolations, converted to mp3 format, is presented at:
+\url{https://drive.google.com/drive/folders/1SlQOI_cL452PftO3KmOYO_qglE2RotCX?usp=sharing}.
+Each of the 18 directories contains five interpolations between two of
+the string quartet pieces in the MusicNet corpus, numbered 0-4.
+
 
 \subsection{Model Evaluation}
 
