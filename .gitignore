@@ -496,6 +496,6 @@ flycheck_*.el
 /data/*.joblib
 /notebooks/*.npy
 /notebooks/*.joblib
-/experiments/
+/experiments/*
 !/experiments/mtvae/
 !/experiments/mtvae/**/*
