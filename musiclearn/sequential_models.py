@@ -41,8 +41,7 @@ def lstm_model(input_shape, n_vocab):
     model.add(Activation("relu"))
     model.add(BatchNormalization())
     model.add(Dropout(0.3))
-    model.add(Dense(n_vocab))
-    model.add(Activation("softmax"))
+    model.add(Dense(n_vocab, activation='softmax'))
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="rmsprop")
 
@@ -68,8 +67,7 @@ def bidirectional_lstm_model(input_shape, n_vocab):
     model.add(Activation("relu"))
     model.add(BatchNormalization())
     model.add(Dropout(0.3))
-    model.add(Dense(n_vocab))
-    model.add(Activation("softmax"))
+    model.add(Dense(n_vocab, activation='softmax'))
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="rmsprop")
 
@@ -112,26 +110,27 @@ class Customized_Attention(Layer):
 def attention_lstm_model(input_shape, n_vocab):
     """ Construct a model based on LSTM and attention """
     model = Sequential()
-
+    
     # Bidirectional LSTM layer with attention
-    model.add(
-        Bidirectional(
-            LSTM(512, return_sequences=True), input_shape=(input_shape[1], input_shape[2])
-        )
-    )
+    model.add(Bidirectional(LSTM(512, return_sequences=True), 
+                            input_shape=(input_shape[1], input_shape[2])
+                           )
+             )
     model.add(Customized_Attention(return_sequences=True))
+    model.add(BatchNormalization())
     model.add(Dropout(0.3))
-
+    
     # Second bidirectional LSTM layer with attention
     model.add(Bidirectional(LSTM(512, return_sequences=True)))
     model.add(Customized_Attention(return_sequences=True))
+    model.add(BatchNormalization())
     model.add(Dropout(0.3))
-
+    
     model.add(Bidirectional(LSTM(512)))
     model.add(Dense(256))
+    model.add(BatchNormalization())
     model.add(Dropout(0.3))
-    model.add(Dense(n_vocab))
-    model.add(Activation("softmax"))
+    model.add(Dense(n_vocab, activation='softmax'))
 
     # compile
     model.compile(loss="sparse_categorical_crossentropy", optimizer="rmsprop")
@@ -215,24 +214,25 @@ def load_attention_lstm_model(weights_path: str, input_shape, n_vocab):
     model = Sequential()
 
     # Bidirectional LSTM layer with attention
-    model.add(
-        Bidirectional(
-            LSTM(512, return_sequences=True), input_shape=(input_shape[1], input_shape[2])
-        )
-    )
+    model.add(Bidirectional(LSTM(512, return_sequences=True), 
+                            input_shape=(input_shape[1], input_shape[2])
+                           )
+             )
     model.add(Customized_Attention(return_sequences=True))
+    model.add(BatchNormalization())
     model.add(Dropout(0.3))
-
+    
     # Second bidirectional LSTM layer with attention
     model.add(Bidirectional(LSTM(512, return_sequences=True)))
     model.add(Customized_Attention(return_sequences=True))
+    model.add(BatchNormalization())
     model.add(Dropout(0.3))
-
+    
     model.add(Bidirectional(LSTM(512)))
     model.add(Dense(256))
+    model.add(BatchNormalization())
     model.add(Dropout(0.3))
-    model.add(Dense(n_vocab))
-    model.add(Activation("softmax"))
+    model.add(Dense(n_vocab, activation='softmax'))
 
     # compile
     model.compile(loss="sparse_categorical_crossentropy", optimizer="rmsprop")
