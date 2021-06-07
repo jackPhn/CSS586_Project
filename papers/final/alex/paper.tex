@@ -363,15 +363,15 @@ training data after each epoch. The best model was selected by a
 combination of validation loss and listening to hand-picked sample
 reconstructions and interpolations.
 
-Data augmentation was also tested--\cite{oore_this_2018} suggests
-augmentation via pitch shifting each training example up or down by up
-to six semitones in order to create additional training examples and
-reduce overfitting, so we followed that recommendation and used it to
-double the size of the training dataset. As a result, we saw much
-lower validation losses (compare Figure \ref{loss} and Figure
-\ref{loss_augment} and a small but noticeable improvement in the
-fidelity of the song reconstructions, suggesting that this method was
-effective in reducing overfitting.
+Data augmentation was also tested--Oore et al (2018)
+\cite{oore_this_2018} suggests augmentation via pitch shifting each
+training example up or down by up to six semitones in order to create
+additional training examples and reduce overfitting, so we followed
+that recommendation and used it to double the size of the training
+dataset. As a result, we saw much lower validation losses (compare
+Figure \ref{loss} and Figure \ref{loss_augment} and a small but
+noticeable improvement in the fidelity of the song reconstructions,
+suggesting that this method was effective in reducing overfitting.
 
 \begin{figure}[htbp]
     \begin{center}
@@ -402,7 +402,7 @@ converted to mp3 format, is presented at the following URL:
 \url{https://drive.google.com/drive/folders/1SlQOI_cL452PftO3KmOYO_qglE2RotCX?usp=sharing}.
 Each of the 18 directories contains five interpolations between two of
 the string quartet pieces in the MusicNet corpus, numbered 0-4, where
-0 is the reconstruction of the first piece, 4 is the reconstruciton of
+0 is the reconstruction of the first piece, 4 is the reconstruction of
 the second piece, and 1-3 are linear interpolations between the two
 pieces. Each file is cropped to the first 16 measures only.
 
@@ -410,24 +410,24 @@ The interpolations are between the following 18 pairs of pieces
 
 \begin{itemize}
 \tightlist
-\item \texttt{Haydn/2104\_op64n5\_1.mid} and \texttt{Ravel/2178\_gr\_rqtf2.mid}
-\item \texttt{Haydn/2105\_op64n5\_2.mid} and   \texttt{Ravel/2179\_gr\_rqtf3.mid}
-\item \texttt{Haydn/2106\_op64n5\_3.mid} and   \texttt{Ravel/2177\_gr\_rqtf1.mid}
-\item \texttt{Beethoven/2497\_qt11\_4.mid} and \texttt{Mozart/1822\_kv\_421\_1.mid}
-\item \texttt{Beethoven/2433\_qt16\_3.mid} and \texttt{Mozart/1859\_kv\_464\_2.mid}
-\item \texttt{Beethoven/2368\_qt12\_4.mid} and \texttt{Mozart/1807\_kv\_387\_3.mid}
-\item \texttt{Beethoven/2314\_qt15\_2.mid} and \texttt{Mozart/1791\_kv\_465\_4.mid}
-\item \texttt{Beethoven/2480\_qt05\_1.mid} and \texttt{Mozart/1792\_kv\_465\_1.mid}
-\item \texttt{Beethoven/2481\_qt05\_2.mid} and \texttt{Mozart/1835\_kv\_590\_3.mid}
-\item \texttt{Beethoven/2379\_qt08\_4.mid} and \texttt{Mozart/1805\_kv\_387\_1.mid}
-\item \texttt{Beethoven/2365\_qt12\_1.mid} and \texttt{Mozart/1793\_kv\_465\_2.mid}
-\item \texttt{Beethoven/2562\_qt02\_4.mid} and \texttt{Mozart/1790\_kv\_465\_3.mid}
-\item \texttt{Beethoven/2494\_qt11\_1.mid} and \texttt{Mozart/1789\_kv\_465\_2.mid}
-\item \texttt{Beethoven/2403\_qt01\_4.mid} and \texttt{Mozart/1788\_kv\_465\_1.mid}
-\item \texttt{Beethoven/2376\_qt08\_1.mid} and \texttt{Dvorak/1916\_dvq10m1.mid}
-\item \texttt{Beethoven/2384\_qt13\_4.mid} and \texttt{Bach/2242\_vs1\_2.mid}
-\item \texttt{Beethoven/2560\_qt02\_2.mid} and \texttt{Beethoven/2621\_qt07\_1.mid}
-\item \texttt{Beethoven/2377\_qt08\_2.mid} and \texttt{Beethoven/2381\_qt13\_1.mid}
+\item \texttt{Haydn/2104\_op64n5\_1.mid} , \texttt{Ravel/2178\_gr\_rqtf2.mid}
+\item \texttt{Haydn/2105\_op64n5\_2.mid} ,   \texttt{Ravel/2179\_gr\_rqtf3.mid}
+\item \texttt{Haydn/2106\_op64n5\_3.mid} ,   \texttt{Ravel/2177\_gr\_rqtf1.mid}
+\item \texttt{Beethoven/2497\_qt11\_4.mid} , \texttt{Mozart/1822\_kv\_421\_1.mid}
+\item \texttt{Beethoven/2433\_qt16\_3.mid} , \texttt{Mozart/1859\_kv\_464\_2.mid}
+\item \texttt{Beethoven/2368\_qt12\_4.mid} , \texttt{Mozart/1807\_kv\_387\_3.mid}
+\item \texttt{Beethoven/2314\_qt15\_2.mid} , \texttt{Mozart/1791\_kv\_465\_4.mid}
+\item \texttt{Beethoven/2480\_qt05\_1.mid} , \texttt{Mozart/1792\_kv\_465\_1.mid}
+\item \texttt{Beethoven/2481\_qt05\_2.mid} , \texttt{Mozart/1835\_kv\_590\_3.mid}
+\item \texttt{Beethoven/2379\_qt08\_4.mid} , \texttt{Mozart/1805\_kv\_387\_1.mid}
+\item \texttt{Beethoven/2365\_qt12\_1.mid} , \texttt{Mozart/1793\_kv\_465\_2.mid}
+\item \texttt{Beethoven/2562\_qt02\_4.mid} , \texttt{Mozart/1790\_kv\_465\_3.mid}
+\item \texttt{Beethoven/2494\_qt11\_1.mid} , \texttt{Mozart/1789\_kv\_465\_2.mid}
+\item \texttt{Beethoven/2403\_qt01\_4.mid} , \texttt{Mozart/1788\_kv\_465\_1.mid}
+\item \texttt{Beethoven/2376\_qt08\_1.mid} , \texttt{Dvorak/1916\_dvq10m1.mid}
+\item \texttt{Beethoven/2384\_qt13\_4.mid} , \texttt{Bach/2242\_vs1\_2.mid}
+\item \texttt{Beethoven/2560\_qt02\_2.mid} , \texttt{Beethoven/2621\_qt07\_1.mid}
+\item \texttt{Beethoven/2377\_qt08\_2.mid} , \texttt{Beethoven/2381\_qt13\_1.mid}
 \end{itemize}
 
 \subsection{Model Evaluation}
