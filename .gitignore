@@ -497,3 +497,5 @@ flycheck_*.el
 /notebooks/*.npy
 /notebooks/*.joblib
 /experiments/
+!/experiments/mtvae/
+!/experiments/mtvae/**/*
