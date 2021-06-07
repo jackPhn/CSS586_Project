@@ -12,6 +12,8 @@ import seaborn as sns
 
 from musiclearn.processing import REST, SUSTAIN
 
+TRACKS = ["violin 1", "violin 2", "viola", "cello"]
+
 
 def plot_learning_curves(history_file: os.PathLike, dest_path: os.PathLike):
     """Plot the train vs. validation learning curves from a history file."""
@@ -42,8 +44,7 @@ def plot_pitch_class_histogram(x: np.array, dest_path: os.PathLike, by_instrumen
     if dest_path.endswith(".pgf"):
         matplotlib.use("pgf")
     xp = np.where(np.isin(x, [REST, SUSTAIN]), np.nan, x)
-    tracks = ["violin 1", "violin 2", "viola", "cello"]
-    df = pd.DataFrame(xp, columns=tracks)
+    df = pd.DataFrame(xp, columns=TRACKS)
     ax = sns.histplot(data=df)
     ax.set_xlabel("MIDI pitch value")
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
