@@ -45,7 +45,7 @@ num_interpolations = 5  # Number of interpolations per pair
 # Load the best model from training experiments
 
 # %%
-exp_name = "mtvae_0021"
+exp_name = "mtvae"
 exp_time = "2021-06-06T09:32:32"
 saved_model_path = f"../experiments/{exp_name}/{exp_time}/saved_model"
 

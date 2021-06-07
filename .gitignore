@@ -6,12 +6,8 @@
 *.cubin
 *.fatbin
 *.lock
-Pipfile
 /bin/
 /obj/
-/data/**/*
-!/data/ECG200/
-!/data/ECG200/*.txt
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
@@ -442,13 +438,6 @@ cython_debug/
 
 # Pipenv lock file
 Pipfile.lock
-.vscode/
-/notebooks/quartets.npy
-/notebooks/*.npy
-/notebooks/*.joblib
-/notebooks/lstm_vae.hdf5
-/notebooks/mtvae.hdf5
-/experiments/
 
 # EMACS
 # -*- mode: gitignore; -*-
@@ -499,3 +488,11 @@ flycheck_*.el
 
 # network security
 /network-security.data
+
+.vscode/
+
+# Project-specific ignores
+/data/*.joblib
+/notebooks/*.npy
+/notebooks/*.joblib
+/experiments/
