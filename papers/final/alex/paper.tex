@@ -103,8 +103,12 @@ generate output sequences \cite{roberts_hierarchical_2018}. This model
 is trained on 16-bar paragraphs of music and is capable of generating
 new melodies that blend two given melodies together via latent space
 interpolation. Among the literature surveyed, MusicVAE's approach is
-the most similar to this work; in comparison our model is
-significantly simpler and works on a single bar of music at a time.
+the most similar to this work; in comparison MusicVAE dedicates
+significant effort to devising an architecture that allows the model
+to generate very long sequences of notes, which is beneficial for
+other generation tasks but not strictly necessary for
+interpolation. Our model is significantly simpler and demonstrates
+that interpolation works well even on a single bar of music at a time.
 
 Another Magenta model called Music Transformer is a generative model
 that borrows its approach from the Natural Language Processing (NLP)
@@ -391,8 +395,10 @@ the original inputs, preserving the key signature and general rhythmic
 and melodic structure, albeit with noticeable differences at the
 individual note level.
 
-A website with several samples of the original input MIDI tracks, the
-autoencoded outputs, and interpolations, is presented at: \textbf{TODO}
+A collection of several samples of the autoencoded outputs and
+interpolations, is presented at:
+\href{https://drive.google.com/drive/folders/12o04uubXtP8WdI62Xe5fjE6wQgzCPG8n?usp=sharing
+  (Google Drive link)}
 
 \subsection{Model Evaluation}
 
