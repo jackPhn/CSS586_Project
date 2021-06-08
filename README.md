@@ -171,3 +171,7 @@ The interpolations are between the following pairs of MusicNet MIDI files:
 - `Beethoven/2384_qt13_4.mid` and `Bach/2242_vs1_2.mid`
 - `Beethoven/2560_qt02_2.mid` and `Beethoven/2621_qt07_1.mid`
 - `Beethoven/2377_qt08_2.mid` and `Beethoven/2381_qt13_1.mid`
+
+A saved model for string quartet interpolation (the best fit model) is
+provided in this repository for inference use:
+[experiments/mtvae/2021-06-06T09:32:32/saved_model](./experiments/mtvae/2021-06-06T09:32:32/saved_model/)

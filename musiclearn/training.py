@@ -1,6 +1,8 @@
 """training.py
 
 Helper functions for running experiments.
+Author: Alex Kyllo
+Date: 2021-06-06
 """
 import logging
 import os

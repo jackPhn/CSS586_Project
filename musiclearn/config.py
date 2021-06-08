@@ -1,3 +1,8 @@
+"""config.py
+Configuration constants.
+Authors: Jack Phan and Alex Kyllo
+"""
+
 import os
 
 import dotenv

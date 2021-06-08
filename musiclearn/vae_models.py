@@ -1,6 +1,7 @@
 """vae_models.py
 Music LSTM Variational Autoencoder models
 Author: Alex Kyllo
+Date: 2021-06-06
 """
 import itertools
 import os

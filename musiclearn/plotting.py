@@ -1,6 +1,7 @@
 """plotting.py
 Functions for plotting results.
 Author: Alex Kyllo
+Date: 2021-06-05
 """
 import os
 
