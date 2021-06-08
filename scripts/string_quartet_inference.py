@@ -2,6 +2,7 @@
 # # String quartet MTVAE model for interpolation
 #
 # Author: Alex Kyllo
+#
 # Date: 2021-06-06
 
 # %% [markdown]

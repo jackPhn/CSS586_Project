@@ -37,12 +37,13 @@
   This paper presents the results of a project to apply a recurrent
   variational autoencoder to the task of modeling a latent space for
   generating pieces of multi-instrument symbolic classical music
-  through interpolation. The code utilized for this research is available at:
-  \url{https://github.com/jackPhn/CSS586_Project/}
+  through linear interpolation. The code utilized for this research is
+  available at: \url{https://github.com/jackPhn/CSS586_Project/}
 \end{abstract}
 
 \keywords{deep learning, recurrent neural networks, sequential models,
-  music modeling, latent space modeling, generative modeling}
+  autoencoders, music modeling, latent space modeling, generative
+  modeling}
 
 \maketitle
 
@@ -86,16 +87,14 @@ to this type of musical arrangement.
 
 The state of the art in music generation still has a long way to go
 before it can consistently generate music scores or performances that
-would be enjoyable and popular for humans to listen to, but for this
+would be broadly enjoyable for humans to listen to, but for this
 reason it is an area of significant opportunity, where a number of
 recent research projects have shown promising progress.
 
 Google's \href{https://magenta.tensorflow.org/}{Magenta} is an
 umbrella project for music deep learning research and development of
 software tools to expose these models for use by creative artists and
-students.
-
-MusicVAE, part of the Magenta project, is a variational Long
+students. MusicVAE, part of the Magenta project, is a variational Long
 Short-Term Memory (LSTM) autoencoder for MIDI that incorporates a
 novel hierarchical structure using a ``conductor'' recurrent layer in
 its decoder model to better capture structure at multiple levels and
@@ -167,7 +166,7 @@ generations from this model as conditioning inputs to a WaveNet-based
 raw audio generator \cite{manzelli_conditioning_2018}.
 
 While there may be significant opportunity in future approaches that
-combining the two, contemporary research generally treats symbolic and
+combine the two, contemporary research generally treats symbolic and
 audio music modeling as separate problem domains and this work does
 the same, choosing to focus on symbolic music.
 
@@ -192,16 +191,16 @@ objects, such as pretty\_midi \cite{raffel_pretty_midi_2014},
 Pypianoroll \cite{dong_pypianoroll_2018} and music21
 \cite{cuthbert_music21_2010}.
 
-In order to accommodate polyphonic music, we each MIDI file is
-converted into a modified pianoroll representation, an example of
-which is visualized in Figure \ref{pianoroll}. While the standard
-pianoroll represents each time-step as a multi-hot encoded vector of
-note values, because most notes are not being played at most timesteps
+In order to accommodate polyphonic music, each MIDI file is converted
+into a modified pianoroll representation, an example of which is
+visualized in Figure \ref{pianoroll}. While the standard pianoroll
+represents each time-step as a multi-hot encoded vector of note
+values, because most notes are not being played at most timesteps
 there is an extreme class imbalance and sparsity in the matrix. This
-is reported in \cite{kumar2019polyphonic} to cause problems in model
-fitting and metrics calculation, so they introduce an alternative
-``multi-stream'' representation of the pianoroll, which we closely,
-(but not exactly) emulate in this work.
+is reported in Kumar and Ravindran (2019) \cite{kumar2019polyphonic}
+to cause problems in model fitting and metrics calculation, so they
+introduce an alternative ``multi-stream'' representation of the
+pianoroll, which we closely, (but not exactly) emulate in this work.
 
 In our modified representation, each instrument track is a sequence of
 integers from 0-129 representing the MIDI note pitch value being
@@ -219,10 +218,12 @@ note pitch values are clipped to a narrower range and ordinal
 encoded. For the 36 string quartets found in the MusicNet database,
 this results in 66 distinct values, where 0-63 represent notes played
 by the violins, viola and cello, 64 is rest and 65 is sustain. Figure
-\ref{pitch_dist} depicts the distribution of these pitch values per
-instrument. Our software package also includes functions to convert
-this representation back into a Music21 Score object, which can then
-be written to a MIDI file.
+\ref{pitch_dist} depicts the distribution of MIDI pitch values per
+instrument and the degree to which they overlap.
+
+Our software package also includes functions to convert this
+representation back into a Music21 Score object, which can then be
+written to a MIDI file that can be synthesized for human listening.
 
 \begin{figure}[htbp]
     \begin{center}
@@ -233,28 +234,28 @@ be written to a MIDI file.
 \end{figure}
 
 Because songs are typically at least a few minutes long and of varying
-length, it will not be feasible to train with entire songs as
-examples, so we will crop songs into phrases of equal numbers of
-beats to use as training data.
-
-The result of this preprocessing is that each training example isbe a
-2D matrix of shape (time steps x instrument tracks) and stacking the
-training examples produces a 3D tensor. Information regarding which
-track corresponds to which musical instrument is lost and therefore
-must be maintained separately to reconstruct the MIDI
+length, it is not feasible to train with entire songs as examples, so
+we crop songs into phrases of equal numbers of beats to use as
+training data. The result of this preprocessing is that each training
+example is a 2D matrix of shape (time steps x instrument tracks) and
+stacking the training examples produces a 3D tensor. Information
+regarding which track corresponds to which musical instrument is lost
+and therefore must be maintained separately to reconstruct the MIDI
 representation. For string quartets this instrument ensemble is always
 \texttt{[40, 40, 41, 42]}, which is an array of MIDI instrument codes
 representing two violins, one viola and one cello. Tempo information
-is also lost from this representation, so the outputs are normalized
-to the default tempo of 120 beats per minute.
+is also lost from this representation, which uses symbolic time steps
+rather than wall clock time, so the outputs are standardized to the
+default tempo of 120 beats per minute.
 
 As the model will produce one output per instrument track, it can
 incorporate only a fixed selection of instrument parts, similar to how
 MusicVAE models three-part (drum, bass and melody)
 \cite{roberts_hierarchical_2018} and MuseGAN models five-part (drum,
-bass, guitar, string, piano) arrangements. Therefore this model is
-purpose-built for string quartets, which are the most common type of
-arrangement found in the MusicNet dataset.
+bass, guitar, string, piano) arrangements. Therefore the number of
+tracks is a hyperparameter to the network architecture definition and
+this model is trained for string quartets, which are the most common
+type of arrangement found in the MusicNet dataset.
 
 \begin{figure}[h]
   \centering
@@ -286,7 +287,7 @@ The encoder model utilizes an embedding layer to encode the note pitch
 integers as vectors; embedding vector length is a tunable
 hyperparameter and we found the best results with it set to 8. Then
 two LSTM layers, with a dropout layer in between, convert the
-sequences into latent codes, which are modeled as a multidimensional
+sequences into latent codes, which are modeled as a 512-dimensional
 Gaussian distribution $z$, produced by the encoder output Lambda layer
 (Figure \ref{decoder}).
 
@@ -297,7 +298,7 @@ dropout layer between them to generate sequences from the latent
 codes. Then the network splits into four parallel outputs, one per
 instrument track, where a fully connected layer with softmax
 activation is used to select the most probable note value for the
-the current track at the each time step (Figure \ref{decoder}).
+the current track at each time step (Figure \ref{decoder}).
 
 \begin{figure}[h]
   \centering
@@ -370,7 +371,7 @@ training example up or down by up to six semitones in order to create
 additional training examples and reduce overfitting, so we followed
 that recommendation and used it to double the size of the training
 dataset. As a result, we saw much lower validation losses (compare
-Figure \ref{loss} and Figure \ref{loss_augment} and a small but
+Figure \ref{loss} and Figure \ref{loss_augment}) and a small but
 noticeable improvement in the fidelity of the song reconstructions,
 suggesting that this method was effective in reducing overfitting.
 
@@ -408,7 +409,10 @@ the string quartet pieces in the MusicNet corpus, numbered 0-4, where
 the second piece, and 1-3 are linear interpolations between the two
 pieces. Each file is cropped to the first 16 measures only.
 
-The interpolations are between the following 18 pairs of pieces:
+The interpolations are between the following 18 pairs of pieces
+denoted by their filenames in the original MusicNet reference MIDI
+archive, which can be downloaded from:
+\url{https://homes.cs.washington.edu/~thickstn/media/musicnet_midis.tar.gz}
 
 \begin{itemize}
 \tightlist
@@ -487,9 +491,9 @@ Cs and fewer Ds than the source samples.
 
 Figures \ref{source_ranges} and \ref{generated_ranges} depict the
 distribution of pitch range (highest pitch - lowest pitch) among
-samples. The distributions appear similar; source distribution has a
-mean of 30.5 while the generated distribution has a mean of 26.3, (the
-medians are similar to the means for both) so the generated
+samples. The distributions appear similar; the source distribution has
+a mean of 30.5 while the generated distribution has a mean of 26.3,
+(the medians are similar to the means for both) so the generated
 distributions have a slightly narrower pitch range.
 
 \begin{figure}[htbp]
@@ -573,11 +577,8 @@ process, and we believe our work meets that goal.
 Future work in this domain could involve disentanglement of the latent
 dimensions to enable music style transfer and semantic editing via
 interpolation in specific directions within the latent space. The VAE
-model could be adapted to other musical genres aside from string
-quartets, to interpolate within or across genres. The model could also
-be modified into a conditional VAE to allow conditioning on the genre,
-composer/artist name, or some other defining attribute label, to
-influence the generated results.
+model could also be adapted to other musical genres aside from string
+quartets, to interpolate within or across genres.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{paper}

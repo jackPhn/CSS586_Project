@@ -1,3 +1,11 @@
+# %% [markdown]
+# # Quantitative evaluation metrics for generated samples
+#
+# Author: Alex Kyllo
+#
+# Date: 2021-06-06
+
+
 # %%
 import os
 import sys
