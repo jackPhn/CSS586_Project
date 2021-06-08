@@ -75,20 +75,23 @@ def pitch_count(df):
         .replace(processing.SUSTAIN, np.nan)[["sample", "value"]]
         .groupby("sample")
         .nunique()
-        .reset_index()["value"]
+        .reset_index()[["value"]]
     )
-    return df.loc[df != 0]
+    df["count"] = 1
+    df = df.groupby("value")["count"].sum().reset_index()
+    df["count"] = df["count"] / df["count"].sum()
+    return df.loc[df.value != 0]
 
 
 pc_x = pitch_count(x)
 pc_xgen = pitch_count(xgen)
+pc_x["class"] = "source"
+pc_xgen["class"] = "generated"
+pc_df = pd.concat([pc_x, pc_xgen])
 
 # %%
 FIGURES = Path("../papers/final/alex/figures/")
-sns.histplot(pc_x, stat="density", binrange=(0, 30))
-
-# %%
-sns.histplot(pc_xgen, stat="density", binrange=(0, 30))
+sns.barplot(data=pc_df, x="value", y="count", hue="class")
 
 # %% [markdown]
 #
@@ -104,6 +107,7 @@ def pitch_count_histogram(df):
     df["value"] = df["value"] % 12
     df = df.groupby(["value"]).count().reset_index()
     df["sample"] = df["sample"] / df["sample"].sum()
+    df["value"] = df["value"].astype(int)
     return df
 
 
