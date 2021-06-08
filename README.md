@@ -42,17 +42,18 @@ project root (this directory). The
 [python-dotenv](https://pypi.org/project/python-dotenv/) package is used to read
 these into shell environment variables.
 
-You will need to create your own .env file. Below are the contents of
-my .env file, yours will have different directory paths depending
-where you placed the downloaded music data. Download and unzip the
-musicnet_midis file and add `MUSICNET_MIDI_DIR=<path to musicnet_midis directory>`
-to the .env file, like this:
+To run the code you will need to create your own .env file (or
+directly set the `MUSICNET_MIDI_DIR` environment variable to the
+absolute path of your `musicnet_midis` directory in your shell
+session). Below are the contents of my .env file, yours will have
+different directory paths depending where you placed the downloaded
+music data. Download and unzip the `musicnet_midis.tar.gz` file and
+add `MUSICNET_MIDI_DIR=<absolute path to musicnet_midis directory>` to
+the .env file, like this:
 
 ```
 MUSICNET_MIDI_DIR=/media/hdd1/data/school/css586/musicnet_midis
 ```
-
-For a current list of configuration constants, see [musiclearn/config.py](./musiclearn/config.py)
 
 ## Code
 
@@ -72,7 +73,7 @@ Here is a guide to the project structure:
 │  └── vae_models.py            <- Multi Track Variational Autoencoder (MTVAE) code (Alex's models)
 ├── notebooks                   <- Jupyter notebook examples for model training, inference, and evaluation
 ├── papers                      <- LaTeX source code for the papers
-├── scripts                     <- Python scripts for model inference and evaluation
+├── scripts                     <- Python scripts for string quartet model inference and evaluation
 ├── .env                        <- Environment variables (create your own)
 ├── .gitignore                  <- Ignore files in Git.
 ├── README.md                   <- This file.
