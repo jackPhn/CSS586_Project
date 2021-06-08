@@ -79,7 +79,7 @@ def pitch_count(df):
     )
     df["count"] = 1
     df = df.groupby("value")["count"].sum().reset_index()
-    df["count"] = df["count"] / df["count"].sum()
+    df["probability"] = df["count"] / df["count"].sum()
     return df.loc[df.value != 0]
 
 
@@ -91,8 +91,8 @@ pc_df = pd.concat([pc_x, pc_xgen])
 
 # %%
 FIGURES = Path("../papers/final/alex/figures/")
-sns.barplot(data=pc_df, x="value", y="count", hue="class")
-
+sns.barplot(data=pc_df, x="value", y="probability", hue="class")
+plt.savefig(FIGURES / "pitch_count_histogram.pgf")
 # %% [markdown]
 #
 # ## Pitch Class Histogram
@@ -106,7 +106,7 @@ def pitch_count_histogram(df):
     )
     df["value"] = df["value"] % 12
     df = df.groupby(["value"]).count().reset_index()
-    df["sample"] = df["sample"] / df["sample"].sum()
+    df["probability"] = df["sample"] / df["sample"].sum()
     df["value"] = df["value"].astype(int)
     return df
 
@@ -116,9 +116,12 @@ pch_x = pitch_count_histogram(x)
 pch_xgen = pitch_count_histogram(xgen)
 
 # %%
-pch = pd.DataFrame(dict(note=pch_x["value"], source=pch_x["sample"], generated=pch_xgen["sample"]))
+pch = pd.DataFrame(
+    dict(note=pch_x["value"], source=pch_x["probability"], generated=pch_xgen["probability"])
+)
 pch = pd.melt(pch, id_vars="note")
-sns.barplot(data=pch, x="note", y="value", hue="variable")
+pch = pch.rename(columns={"value": "probability", "variable": "class"})
+sns.barplot(data=pch, x="note", y="probability", hue="class")
 
 # %% [markdown]
 #

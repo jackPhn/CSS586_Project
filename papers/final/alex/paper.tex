@@ -448,13 +448,12 @@ Lerch (2020) propose a set of metrics informed by music theory, for
 probabilistically evaluating how similar the generations are to known
 sample distributions of real music \cite{yang_evaluation_2020}. These
 metrics include counts, ranges, histograms and transition matrices of
-pitches and note lengths, then the Kullback-Leibler divergence and
-overlapping area of the probability density or mass functions are
-used to compare against known reference distributions per musical
-genre \cite{yang_evaluation_2020}. Due to the cost and time
+pitches and note lengths, then compare the probability density or mass
+functions of generated samples against that of known genuine source
+samples \cite{yang_evaluation_2020}. Due to the cost and time
 requirements associated with designing a human subjects experiment for
 qualitative evaluation, we utilize this quantitative approach to the
-assessment of generated samples.
+assessment of the pitch distributions of generated samples.
 
 Figure \ref{pitch_counts} depicts histograms of source and generated
 music samples respectively (1 sample = 1 measure) by the number of
@@ -486,6 +485,13 @@ Cs and fewer Ds than the source samples.
     \label{pch}
 \end{figure}
 
+Figures \ref{source_ranges} and \ref{generated_ranges} depict the
+distribution of pitch range (highest pitch - lowest pitch) among
+samples. The distributions appear similar; source distribution has a
+mean of 30.5 while the generated distribution has a mean of 26.3, (the
+medians are similar to the means for both) so the generated
+distributions have a slightly narrower pitch range.
+
 \begin{figure}[htbp]
     \begin{center}
         \scalebox{0.6}{\input{figures/pitch_range_source.pgf}}
@@ -501,6 +507,11 @@ Cs and fewer Ds than the source samples.
     \caption{Pitch range per sample for generated samples.}
     \label{generated_ranges}
 \end{figure}
+
+Figures \ref{source_interval} and \ref{generated_interval} describe
+the distributions average pitch intervals between consecutively played
+notes; these distributions are very similar, both are centered with
+approximate mean of 0 and standard deviation of 1.5.
 
 \begin{figure}[htbp]
     \begin{center}
@@ -518,6 +529,15 @@ Cs and fewer Ds than the source samples.
     \label{generated_interval}
 \end{figure}
 
+Finally, figures \ref{pctm_source} and \ref{pctm_generated} depict
+heatmaps of transition probability between the twelve pitch classes in
+the chromatic scale. The source samples exhibit higher probabilities
+of transition between different notes, while in the generated sample
+there is more repetition of the same note, again confirming the
+relative lack of pitch diversity in the generated samples. However,
+the dark areas of very low probability in the source distribution are
+similarly dark in the generated distribution; the model is unlikely to
+generate pitch transitions that are rare in the source distribution.
 
 \begin{figure}[htbp]
   \centering
@@ -534,6 +554,30 @@ Cs and fewer Ds than the source samples.
 \end{figure}
 
 \section{Discussion}
+
+Our research demonstrates that a relatively simple LSTM variational
+autoencoder network can learn a continuous latent space for generating
+realistic linear interpolations between symbolic, classical string
+quartet pieces, which are a notably complex genre of music.
+Furthermore, our model can achieve this while working
+measure-by-measure, on sequences just 16 time steps in length, without
+the need for a highly complex neural architecture capable of
+memorizing very long sequences. Listening to the generated samples and
+profiling their pitch distributions reveals that some of the pitch
+diversity of the original music is lost, but the overall melodic and
+rhythmic structure still generally resemble the originals. It was our
+aim to produce interpolations that retained enough aesthetic quality
+to be pleasing to listen to and useful in inspiring the creative
+process, and we believe our work meets that goal.
+
+Future work in this domain could involve disentanglement of the latent
+dimensions to enable music style transfer and semantic editing via
+interpolation in specific directions within the latent space. The VAE
+model could be adapted to other musical genres aside from string
+quartets, to interpolate within or across genres. The model could also
+be modified into a conditional VAE to allow conditioning on the genre,
+composer/artist name, or some other defining attribute label, to
+influence the generated results.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{paper}
